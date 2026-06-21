@@ -1,0 +1,75 @@
+{
+  "expo": {
+    "name": "Al-Quds",
+    "slug": "al-quds-food",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/al-quds-logo.png",
+    "scheme": "foodorderapp",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/al-quds-logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Al-Quds uses your location to set your delivery address in Rawalpindi.",
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/al-quds-logo.png",
+        "backgroundColor": "#000000"
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "POST_NOTIFICATIONS",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/al-quds-logo.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/al-quds-logo.png",
+          "color": "#D1AB66",
+          "defaultChannel": "default",
+          "enableBackgroundRemoteNotifications": true
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Al-Quds uses your location to set your delivery address in Rawalpindi.",
+          "locationAlwaysAndWhenInUsePermission": "Al-Quds uses your location to set your delivery address in Rawalpindi."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "41f1b00c-c3c3-453b-a8bc-b09143d275af"
+      },
+      "router": {}
+    },
+    "owner": "aliiii444"
+  }
+}
