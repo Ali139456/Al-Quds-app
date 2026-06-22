@@ -28,15 +28,24 @@ import {
 import {
   RAWALPINDI_AREAS,
   RAWALPINDI_CENTER,
+  getAreaByName,
   type RawalpindiArea,
 } from '@/constants/rawalpindiAreas';
 import AreaDropdown from '@/components/AreaDropdown';
+import { useDelivery } from '@/contexts/DeliveryContext';
+
+function coordsFromArea(areaName: string, selectedArea: RawalpindiArea | null) {
+  const area = selectedArea ?? getAreaByName(areaName);
+  if (area?.latitude == null || area?.longitude == null) return null;
+  return { lat: area.latitude, lng: area.longitude };
+}
 
 export default function AddAddressScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const { addAddress, getCurrentLocation, isInRawalpindi: checkRawalpindi } =
     useAddress();
+  const { applySavedAddress } = useDelivery();
   const [label, setLabel] = useState('');
   const [areaName, setAreaName] = useState('');
   const [selectedArea, setSelectedArea] = useState<RawalpindiArea | null>(null);
@@ -101,13 +110,17 @@ export default function AddAddressScreen() {
   const handleSelectArea = (area: RawalpindiArea) => {
     setSelectedArea(area);
     setAreaName(area.name);
-    if (area.latitude != null && area.longitude != null && mapRef.current) {
-      mapRef.current.animateToRegion({
-        latitude: area.latitude,
-        longitude: area.longitude,
-        latitudeDelta: 0.02,
-        longitudeDelta: 0.02,
-      });
+    if (area.latitude != null && area.longitude != null) {
+      setLat(area.latitude);
+      setLng(area.longitude);
+      if (mapRef.current && Platform.OS !== 'web') {
+        mapRef.current.animateToRegion({
+          latitude: area.latitude,
+          longitude: area.longitude,
+          latitudeDelta: 0.02,
+          longitudeDelta: 0.02,
+        });
+      }
     }
   };
 
@@ -129,13 +142,22 @@ export default function AddAddressScreen() {
       return;
     }
     if (lat === null || lng === null) {
+      const resolved = coordsFromArea(areaName, selectedArea);
+      if (resolved) {
+        setLat(resolved.lat);
+        setLng(resolved.lng);
+      }
+    }
+    const saveLat = lat ?? coordsFromArea(areaName, selectedArea)?.lat ?? null;
+    const saveLng = lng ?? coordsFromArea(areaName, selectedArea)?.lng ?? null;
+    if (saveLat === null || saveLng === null) {
       toast.warning(
-        'Search your area on the map, pick from the list, or use GPS only if you are at that address.',
+        'Select your area from the list, tap the map, or use GPS.',
         'Location required'
       );
       return;
     }
-    if (!isInRawalpindi(lat, lng)) {
+    if (!isInRawalpindi(saveLat, saveLng)) {
       toast.warning(DELIVERY_ZONE_OUT_MESSAGE, DELIVERY_ZONE_TITLE);
       return;
     }
@@ -151,11 +173,14 @@ export default function AddAddressScreen() {
       streetNumber: houseNumber.trim() || undefined,
       instructions: instructions.trim() || undefined,
       city: DEFAULT_CITY,
-      latitude: lat,
-      longitude: lng,
+      latitude: saveLat,
+      longitude: saveLng,
     });
     setLoading(false);
-    if (result.ok) {
+    if (result.ok && result.address) {
+      await applySavedAddress(result.address);
+      router.back();
+    } else if (result.ok) {
       router.back();
     } else {
       toast.error(result.error ?? 'Failed to save', 'Error');
@@ -278,11 +303,12 @@ export default function AddAddressScreen() {
         value={areaName}
         onChangeText={(t) => {
           setAreaName(t);
-          setSelectedArea(
+          const match =
             RAWALPINDI_AREAS.find(
               (a) => a.name.toLowerCase() === t.trim().toLowerCase()
-            ) ?? null
-          );
+            ) ?? null;
+          setSelectedArea(match);
+          if (match) handleSelectArea(match);
         }}
       />
 
@@ -380,6 +406,11 @@ export default function AddAddressScreen() {
           {checkRawalpindi(lat, lng)
             ? '✓ Location in Rawalpindi'
             : '✗ Outside delivery area'}
+        </Text>
+      )}
+      {lat === null && lng === null && selectedArea && (
+        <Text style={[styles.coords, { color: colors.muted }]}>
+          Area selected — tap Save or pin on map to confirm
         </Text>
       )}
 

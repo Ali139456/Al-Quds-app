@@ -342,8 +342,14 @@ export function DeliveryProvider({ children }: { children: React.ReactNode }) {
       return false;
     }
     if (!streetNumber.trim()) {
-      toast.warning('Please enter your house / street number.', 'Required');
-      return false;
+      const hasSavedDetail =
+        selectedAddress?.streetNumber?.trim() ||
+        selectedAddress?.addressLine?.trim() ||
+        guestAddressLine.trim();
+      if (!hasSavedDetail) {
+        toast.warning('Please enter your house / street number or full address.', 'Required');
+        return false;
+      }
     }
     const zoneStatus = getDeliveryZoneStatus();
     if (zoneStatus === 'out_of_zone') {
@@ -370,14 +376,14 @@ export function DeliveryProvider({ children }: { children: React.ReactNode }) {
 
   const saveDeliverySetup = useCallback(async (): Promise<boolean> => {
     if (!validateLocationSetup()) return false;
-    if (user) {
+    if (user && selectedAddress) {
       await setSelectedAddress(null);
     }
     await persistSession(true);
     setShowSetupModal(false);
     toast.success('Delivery location saved.', 'Ready to order');
     return true;
-  }, [validateLocationSetup, persistSession, user, setSelectedAddress]);
+  }, [validateLocationSetup, persistSession, user, selectedAddress, setSelectedAddress]);
 
   const dismissSetupModal = useCallback(() => {
     if (isDeliveryReady()) {

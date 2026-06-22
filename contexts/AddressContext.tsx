@@ -10,7 +10,7 @@ type AddressContextType = {
   addresses: SavedAddress[];
   selectedAddress: SavedAddress | null;
   isLoading: boolean;
-  addAddress: (address: Omit<SavedAddress, 'id' | 'userId'>) => Promise<{ ok: boolean; error?: string }>;
+  addAddress: (address: Omit<SavedAddress, 'id' | 'userId'>) => Promise<{ ok: boolean; error?: string; address?: SavedAddress }>;
   removeAddress: (id: string) => Promise<void>;
   setSelectedAddress: (id: string | null) => Promise<void>;
   getCurrentLocation: () => Promise<{ lat: number; lng: number } | null>;
@@ -56,7 +56,7 @@ export function AddressProvider({ children }: { children: React.ReactNode }) {
       setAddresses(updated);
       await setSelectedAddressId(newAddr.id);
       setSelectedAddressState(newAddr);
-      return { ok: true };
+      return { ok: true, address: newAddr };
     },
     [user]
   );
