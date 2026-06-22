@@ -69,7 +69,8 @@
       "eas": {
         "projectId": "41f1b00c-c3c3-453b-a8bc-b09143d275af"
       },
-      "router": {}
+      "router": {},
+      "apiUrl": "https://al-quds-app-production.up.railway.app"
     },
     "owner": "aliiii444"
   }

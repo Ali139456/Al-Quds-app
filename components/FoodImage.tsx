@@ -1,4 +1,5 @@
 import { Image, ImageStyle } from 'expo-image';
+import { useState } from 'react';
 import { StyleProp, Text, TextStyle } from 'react-native';
 import { resolveFoodImageUri } from '@/utils/resolveFoodImage';
 
@@ -25,8 +26,9 @@ export default function FoodImage({
   fallbackEmoji = '🍔',
   priority = 'normal',
 }: Props) {
+  const [loadFailed, setLoadFailed] = useState(false);
   const uri = resolveFoodImageUri(image);
-  if (uri) {
+  if (uri && !loadFailed) {
     return (
       <Image
         source={{ uri }}
@@ -36,6 +38,7 @@ export default function FoodImage({
         recyclingKey={uri}
         transition={120}
         priority={priority}
+        onError={() => setLoadFailed(true)}
       />
     );
   }
