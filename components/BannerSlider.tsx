@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { View, ScrollView, StyleSheet, Pressable, Image, useWindowDimensions, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { View, ScrollView, StyleSheet, Pressable, useWindowDimensions, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Text } from '@/components/Themed';
 import { router } from 'expo-router';
@@ -7,7 +8,7 @@ import type { Banner } from '@/hooks/useBanners';
 import Colors from '@/constants/Colors';
 import { CategoryGradients } from '@/constants/Gradients';
 import { useColorScheme } from '@/components/useColorScheme';
-import { API_BASE_URL } from '@/constants/api';
+import { resolveFoodImageUri } from '@/utils/resolveFoodImage';
 import { Radius, Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 
@@ -61,8 +62,7 @@ export default function BannerSlider({ banners }: BannerSliderProps) {
         contentContainerStyle={styles.scrollContent}
       >
         {banners.map((b) => {
-          const isImageUrl = b.image && (b.image.startsWith('http') || b.image.startsWith('/'));
-          const imageUri = isImageUrl ? (b.image.startsWith('/') ? API_BASE_URL + b.image : b.image) : null;
+          const imageUri = resolveFoodImageUri(b.image);
           return (
             <Pressable
               key={b.id}
@@ -71,7 +71,7 @@ export default function BannerSlider({ banners }: BannerSliderProps) {
             >
               {imageUri ? (
                 <>
-                  <Image source={{ uri: imageUri }} style={styles.bannerImage} resizeMode="cover" />
+                  <Image source={{ uri: imageUri }} style={styles.bannerImage} contentFit="cover" cachePolicy="memory-disk" />
                   <LinearGradient
                     colors={['transparent', 'rgba(0,0,0,0.75)']}
                     style={styles.imageOverlay}

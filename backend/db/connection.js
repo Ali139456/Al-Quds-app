@@ -177,6 +177,7 @@ async function init() {
       const bannerCols = all('PRAGMA table_info(banners)').map((r) => r.name);
       if (!bannerCols.includes('display')) run('ALTER TABLE banners ADD COLUMN display INTEGER DEFAULT 1');
     }
+    seedBannersIfEmpty();
     try {
       const { runMigrationsV2 } = require('./migrations-v2');
       runMigrationsV2({ run, all, get, execMulti });
@@ -270,6 +271,36 @@ const DEFAULT_ADDON_IDS_JSON = JSON.stringify([
   'addon_fries', 'addon_drink', 'addon_pepsi', 'addon_coca_cola',
   'addon_fanta', 'addon_sprite', 'addon_7up', 'addon_mirinda',
 ]);
+
+function seedBannersIfEmpty() {
+  const row = get('SELECT COUNT(*) AS c FROM banners');
+  if (row && Number(row.c) > 0) return;
+  const uploadsDir = path.join(__dirname, '..', 'uploads', 'banners');
+  const defaults = [
+    {
+      title: 'Al-Quds',
+      subtitle: 'Fried · Burgers · Arabian · Chinese · Pasta',
+      image: '/uploads/banners/banner-1771555229531.jpg',
+      link: '',
+      sortOrder: 0,
+    },
+    {
+      title: 'Order now',
+      subtitle: 'Delivery & pickup. Fresh ingredients.',
+      image: '/uploads/banners/banner-1771555404875.jpg',
+      link: '',
+      sortOrder: 1,
+    },
+  ];
+  for (const b of defaults) {
+    const filename = path.basename(b.image);
+    if (!fs.existsSync(path.join(uploadsDir, filename))) continue;
+    run(
+      'INSERT INTO banners (title, subtitle, image, link, sort_order, display) VALUES (?, ?, ?, ?, ?, 1)',
+      [b.title, b.subtitle, b.image, b.link, b.sortOrder]
+    );
+  }
+}
 
 function runSeed() {
   const menuRows = require('./seed-menu.js');

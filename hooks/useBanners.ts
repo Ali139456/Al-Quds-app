@@ -12,8 +12,8 @@ export interface Banner {
 }
 
 const DEFAULT_BANNERS: Banner[] = [
-  { id: 0, title: 'Al-Quds', subtitle: 'Fried · Burgers · Arabian · Chinese · Pasta', image: '🍔', link: '', sortOrder: 0 },
-  { id: -1, title: 'Order now', subtitle: 'Delivery & pickup. Fresh ingredients.', image: '🛵', link: '', sortOrder: 1 },
+  { id: 0, title: 'Al-Quds', subtitle: 'Fried · Burgers · Arabian · Chinese · Pasta', image: '/uploads/banners/banner-1771555229531.jpg', link: '', sortOrder: 0 },
+  { id: -1, title: 'Order now', subtitle: 'Delivery & pickup. Fresh ingredients.', image: '/uploads/banners/banner-1771555404875.jpg', link: '', sortOrder: 1 },
 ];
 
 function mapBanners(data: unknown): Banner[] {

@@ -543,19 +543,14 @@ app.get('/api/orders', (req, res) => {
 app.get('/api/banners', (req, res) => {
   try {
     const rows = all("SELECT id, title, subtitle, image, link, sort_order FROM banners WHERE (display = 1 OR display IS NULL) ORDER BY sort_order ASC, created_at DESC");
-    const base = req.protocol + '://' + req.get('host');
-    res.json(rows.map((r) => {
-      let img = r.image || '🍔';
-      if (img.startsWith('/')) img = base + img;
-      return {
-        id: r.id,
-        title: r.title || '',
-        subtitle: r.subtitle || '',
-        image: img,
-        link: r.link || '',
-        sortOrder: r.sort_order != null ? Number(r.sort_order) : 0,
-      };
-    }));
+    res.json(rows.map((r) => ({
+      id: r.id,
+      title: r.title || '',
+      subtitle: r.subtitle || '',
+      image: r.image || '🍔',
+      link: r.link || '',
+      sortOrder: r.sort_order != null ? Number(r.sort_order) : 0,
+    })));
   } catch (e) {
     res.json([]);
   }
