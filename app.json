@@ -35,7 +35,8 @@
         "android.permission.ACCESS_FINE_LOCATION"
       ],
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.aliiii444.alqudsfood"
     },
     "web": {
       "bundler": "metro",
