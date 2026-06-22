@@ -141,6 +141,14 @@ app.use(cors({ origin: true }));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+app.get('/health', (_req, res) => {
+  res.json({ ok: true, service: 'al-quds-api' });
+});
+
+app.get('/', (_req, res) => {
+  res.redirect('/admin');
+});
+
 let run, all, get, getParams, allParams, save;
 let notifyRidersNewOrder = () => {};
 let pushService = null;
@@ -1603,7 +1611,7 @@ async function start() {
   trash = createTrashService({ run, all, get, getParams, allParams });
   trash.startAutoPurge();
 
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log('');
     console.log('  Al-Quds backend running at http://localhost:' + PORT);
     console.log('  API:     http://localhost:' + PORT + '/api/menu');
