@@ -2,10 +2,11 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
 const { init } = require('./db/connection');
 const multer = require('multer');
 
-const PORT = process.env.PORT || 4000;
+const PORT = Number(process.env.PORT) || 4000;
 
 function isInRawalpindi(lat, lng) {
   const latitude = Number(lat);
@@ -1575,11 +1576,23 @@ app.use('/admin', express.static(path.join(__dirname, 'admin')));
 
 // ============ Start ============
 async function start() {
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log('');
-    console.log('  Al-Quds backend listening on port ' + PORT);
-    console.log('  Initializing database…');
-    console.log('');
+  const server = http.createServer(app);
+  server.on('error', (err) => {
+    console.error('HTTP server error:', err);
+    process.exit(1);
+  });
+
+  await new Promise((resolve, reject) => {
+    server.listen({ port: PORT, host: '::', ipv6Only: false }, () => {
+      const addr = server.address();
+      console.log('');
+      console.log('  Al-Quds backend listening on', JSON.stringify(addr));
+      console.log('  PORT env:', process.env.PORT || '(unset, default ' + PORT + ')');
+      console.log('  Initializing database…');
+      console.log('');
+      resolve();
+    });
+    server.once('error', reject);
   });
 
   try {
