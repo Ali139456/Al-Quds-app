@@ -66,8 +66,10 @@ function execMulti(sql) {
 
 async function init() {
   if (db) return { db, run, all, get, allParams, getParams, save, execMulti };
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+  const sqlJsDist = path.join(path.dirname(require.resolve('sql.js/package.json')), 'dist');
   SQL = await initSqlJs({
-    locateFile: (file) => path.join(__dirname, '..', 'node_modules', 'sql.js', 'dist', file),
+    locateFile: (file) => path.join(sqlJsDist, file),
   });
   if (fs.existsSync(dbPath)) {
     const buffer = fs.readFileSync(dbPath);

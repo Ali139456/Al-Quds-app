@@ -142,7 +142,7 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.get('/health', (_req, res) => {
-  res.json({ ok: true, service: 'al-quds-api' });
+  res.json({ ok: true, service: 'al-quds-api', ready: serverReady });
 });
 
 app.get('/', (_req, res) => {
@@ -150,6 +150,7 @@ app.get('/', (_req, res) => {
 });
 
 let run, all, get, getParams, allParams, save;
+let serverReady = false;
 let notifyRidersNewOrder = () => {};
 let pushService = null;
 let trash = null;
@@ -1574,13 +1575,25 @@ app.use('/admin', express.static(path.join(__dirname, 'admin')));
 
 // ============ Start ============
 async function start() {
-  const api = await init();
-  run = api.run;
-  all = api.all;
-  get = api.get;
-  getParams = api.getParams;
-  allParams = api.allParams;
-  save = api.save;
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log('');
+    console.log('  Al-Quds backend listening on port ' + PORT);
+    console.log('  Initializing database…');
+    console.log('');
+  });
+
+  try {
+    const api = await init();
+    run = api.run;
+    all = api.all;
+    get = api.get;
+    getParams = api.getParams;
+    allParams = api.allParams;
+    save = api.save;
+  } catch (err) {
+    console.error('Database init failed:', err);
+    process.exit(1);
+  }
 
   const { registerV2Routes } = require('./api-v2');
   registerV2Routes(app, { run, all, get, allParams, getParams }, uploadPayment);
@@ -1611,14 +1624,11 @@ async function start() {
   trash = createTrashService({ run, all, get, getParams, allParams });
   trash.startAutoPurge();
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log('');
-    console.log('  Al-Quds backend running at http://localhost:' + PORT);
-    console.log('  API:     http://localhost:' + PORT + '/api/menu');
-    console.log('  Admin:   http://localhost:' + PORT + '/admin');
-    console.log('  DB file: ' + dbPath);
-    console.log('');
-  });
+  serverReady = true;
+  console.log('  API:     http://0.0.0.0:' + PORT + '/api/menu');
+  console.log('  Admin:   http://0.0.0.0:' + PORT + '/admin');
+  console.log('  DB file: ' + dbPath);
+  console.log('');
 }
 
 start().catch((err) => {
