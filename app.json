@@ -4,14 +4,14 @@
     "slug": "al-quds-food",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/al-quds-logo.png",
+    "icon": "./assets/images/al-quds-icon.png",
     "scheme": "foodorderapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/al-quds-logo.png",
+      "image": "./assets/images/al-quds-mark.png",
       "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "backgroundColor": "#F5F3F0"
     },
     "ios": {
       "supportsTablet": true,
@@ -24,8 +24,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/al-quds-logo.png",
-        "backgroundColor": "#000000"
+        "foregroundImage": "./assets/images/al-quds-icon.png",
+        "backgroundColor": "#F5F3F0"
       },
       "permissions": [
         "ACCESS_COARSE_LOCATION",
@@ -41,14 +41,14 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/al-quds-logo.png"
+      "favicon": "./assets/images/al-quds-icon.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/al-quds-logo.png",
+          "icon": "./assets/images/al-quds-icon.png",
           "color": "#D1AB66",
           "defaultChannel": "default",
           "enableBackgroundRemoteNotifications": true

@@ -7,15 +7,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
 import { useCart } from '@/contexts/CartContext';
+import { useColorScheme } from '@/components/useColorScheme';
+import Colors from '@/constants/Colors';
 import { shadowFab } from '@/constants/shadows';
 
 const BAR_HEIGHT = 78;
-const BAR_BG = '#000000';
 const FAB_SIZE = 72;
 const FAB_HALF = FAB_SIZE / 2;
 const FAB_COLOR = '#D1AB66';
 const ACTIVE_COLOR = '#D1AB66';
-const INACTIVE_COLOR = '#9CA3AF';
 const TAB_ICON_SIZE = 20;
 const FAB_GAP = FAB_SIZE + 24;
 const FAB_DROP = 14;
@@ -30,10 +30,16 @@ const TAB_CONFIG: Record<string, { icon: React.ComponentProps<typeof FontAwesome
 export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { totalItems } = useCart();
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
+  const isLight = colorScheme !== 'dark';
+
+  const barBg = colors.tabBar;
+  const inactiveColor = isLight ? '#78716C' : '#9CA3AF';
+  const barBorder = isLight ? 'rgba(28, 25, 23, 0.08)' : 'rgba(255,255,255,0.06)';
 
   const safeBottom = Math.max(insets.bottom, Platform.OS === 'web' ? 8 : 0);
   const barTotalHeight = BAR_HEIGHT + safeBottom;
-  // Only bar height — FAB floats above via overflow, content shows behind top half
   const wrapperHeight = barTotalHeight;
 
   const routes = state.routes;
@@ -41,7 +47,7 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const renderTab = (route: (typeof routes)[0], index: number) => {
     const focused = state.index === index;
     const config = TAB_CONFIG[route.name] ?? { icon: 'circle', label: route.name };
-    const tint = focused ? ACTIVE_COLOR : INACTIVE_COLOR;
+    const tint = focused ? ACTIVE_COLOR : inactiveColor;
     const showBadge = route.name === 'cart' && totalItems > 0;
 
     const onPress = () => {
@@ -67,7 +73,7 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         <View style={styles.iconWrap}>
           <FontAwesome name={config.icon} size={TAB_ICON_SIZE} color={tint} />
           {showBadge && (
-            <View style={styles.badge}>
+            <View style={[styles.badge, { borderColor: barBg }]}>
               <Text style={styles.badgeText}>{totalItems > 9 ? '9+' : totalItems}</Text>
             </View>
           )}
@@ -79,10 +85,17 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
 
   return (
     <View style={[styles.wrapper, { height: wrapperHeight, pointerEvents: 'box-none' }]}>
-      {/* Bar background */}
-      <View style={[styles.bar, { height: barTotalHeight }]} />
+      <View
+        style={[
+          styles.bar,
+          {
+            height: barTotalHeight,
+            backgroundColor: barBg,
+            borderTopColor: barBorder,
+          },
+        ]}
+      />
 
-      {/* 4 tabs + center gap */}
       <View style={[styles.tabRow, { height: BAR_HEIGHT, bottom: safeBottom }]}>
         <View style={styles.side}>{renderTab(routes[0], 0)}</View>
         <View style={styles.side}>{renderTab(routes[1], 1)}</View>
@@ -91,7 +104,6 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         <View style={styles.side}>{renderTab(routes[3], 3)}</View>
       </View>
 
-      {/* Center FAB — only big circle */}
       <Pressable
         style={({ pressed }) => [
           styles.fab,
@@ -134,9 +146,17 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: BAR_BG,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255,255,255,0.06)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+      },
+      android: { elevation: 8 },
+      default: {},
+    }),
   },
   tabRow: {
     position: 'absolute',
@@ -184,7 +204,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: FAB_COLOR,
     borderWidth: 2,
-    borderColor: BAR_BG,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 3,

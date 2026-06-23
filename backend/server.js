@@ -1651,6 +1651,10 @@ app.post('/api/admin/trash/:id/restore', (req, res) => {
 });
 
 // ============ Serve admin page ============
+app.get('/favicon.ico', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin', 'favicon.png'));
+});
+
 app.get('/admin', (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Pragma', 'no-cache');

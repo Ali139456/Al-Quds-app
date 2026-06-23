@@ -6,7 +6,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <title>Al-Quds Admin</title>
-  <link rel="icon" href="/admin/al-quds-logo.png" type="image/png" />
+  <link rel="icon" href="/admin/favicon.png" type="image/png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="/admin/favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -4167,8 +4168,8 @@
   </div>
 
   <script>
-    // Always target the backend. If admin is opened from another origin (e.g. Expo), use default port.
-    const API = (window.location.port === '4000' ? window.location.origin : 'http://localhost:4000');
+    // Always use the same host that serves this admin page (local or Railway production).
+    const API = window.location.origin;
     let token = localStorage.getItem('adminToken');
 
     function applyAdminTheme(theme) {

@@ -58,8 +58,8 @@ export default function AccountScreen() {
         end={{ x: 1, y: 1 }}
         style={[styles.profileCard, { borderColor: colors.border }]}
       >
-        <View style={[styles.avatarWrap, { backgroundColor: colors.card }]}>
-          <Logo size={48} />
+        <View style={[styles.avatarWrap, { backgroundColor: colors.accentMuted }]}>
+          <Logo size={48} variant="square" />
         </View>
         <View style={styles.profileInfo}>
           <Text style={[styles.name, { color: colors.text }]}>{user.name}</Text>

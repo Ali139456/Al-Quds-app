@@ -170,7 +170,7 @@ export default function ProfileScreen() {
 
       <View style={styles.avatarWrap}>
         <View style={[styles.avatarRing, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Logo size={72} />
+          <Logo size={72} variant="square" />
           <Pressable
             style={[styles.cameraBtn, { backgroundColor: colors.accent }]}
             onPress={() => toast.info('Profile photo upload coming soon')}
