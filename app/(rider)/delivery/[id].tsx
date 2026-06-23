@@ -86,7 +86,7 @@ export default function RiderDeliveryDetail() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'dark'];
   const { user } = useAuth();
-  const { acceptOrder, updateOrderStatus, refresh } = useRider();
+  const { updateOrderStatus, refresh } = useRider();
   const [order, setOrder] = useState<RiderOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -147,7 +147,7 @@ export default function RiderDeliveryDetail() {
   const shortId = order.id.replace('order_', '#');
   const status = getRiderStatus(order.status);
   const isMine = order.rider_id === user?.id;
-  const canAccept = !order.rider_id && ['placed', 'confirmed', 'preparing'].includes(order.status);
+  const waitingForAssignment = !order.rider_id;
 
   const openMaps = () => {
     if (order.latitude != null && order.longitude != null) {
@@ -235,15 +235,13 @@ export default function RiderDeliveryDetail() {
         </View>
 
         <View style={styles.actions}>
-          {canAccept ? (
-            <ActionButton
-              label="Accept order"
-              icon="check"
-              color={colors.accent}
-              textColor="#1a1a1a"
-              loading={actionLoading}
-              onPress={() => runAction(() => acceptOrder(order.id))}
-            />
+          {waitingForAssignment ? (
+            <View style={[styles.noteBox, { backgroundColor: colors.accentMuted }]}>
+              <FontAwesome name="info-circle" size={12} color={colors.accent} />
+              <Text style={[styles.noteText, { color: colors.text }]}>
+                This order is not assigned to you yet. Admin will assign it from the dashboard.
+              </Text>
+            </View>
           ) : null}
 
           {isMine && order.status === 'confirmed' ? (

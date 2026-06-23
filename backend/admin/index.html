@@ -800,6 +800,70 @@
       padding: 12px 16px;
       border-top: 1px solid var(--border);
       background: rgba(0, 0, 0, 0.15);
+      flex-wrap: wrap;
+    }
+    .order-footer-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .btn-assign-rider {
+      border: 1px solid rgba(59, 130, 246, 0.45);
+      background: rgba(59, 130, 246, 0.12);
+      color: #60a5fa;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .btn-assign-rider:hover { background: rgba(59, 130, 246, 0.22); }
+    .rider-assigned-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+    }
+    .rider-unassigned-badge {
+      display: inline-flex;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+    }
+    .rider-preview-box {
+      margin-top: 12px;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.12);
+    }
+    .rider-preview-box .label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .rider-preview-name {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .rider-preview-meta {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.5;
     }
     .order-total {
       font-size: 0.95rem;
@@ -3834,6 +3898,38 @@
     </div>
   </div>
 
+  <div id="assignRiderModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="assignRiderModalTitle">
+    <div class="modal-box modal-md" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-header-text">
+          <h3 id="assignRiderModalTitle">Assign rider</h3>
+          <p class="modal-subtitle" id="assignRiderModalSubtitle">Choose a rider for this delivery.</p>
+        </div>
+        <button type="button" class="modal-close" onclick="closeAssignRiderModal()" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="assignRiderOrderId" value="" />
+        <div class="field">
+          <label for="assignRiderSelect">Select rider</label>
+          <select id="assignRiderSelect" onchange="updateAssignRiderPreview()">
+            <option value="">— Choose rider —</option>
+          </select>
+        </div>
+        <div id="assignRiderPreview" class="rider-preview-box hidden">
+          <div class="label">Rider details</div>
+          <div class="rider-preview-name" id="assignRiderPreviewName">—</div>
+          <div class="rider-preview-meta" id="assignRiderPreviewMeta">—</div>
+        </div>
+        <p class="empty-msg" id="assignRiderEmpty" style="margin-top:12px;display:none">No riders found. Add riders from the Riders tab first.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="assignRiderUnassignBtn" onclick="unassignRiderFromOrder()" style="display:none">Remove rider</button>
+        <button type="button" class="btn-secondary" onclick="closeAssignRiderModal()">Cancel</button>
+        <button type="button" class="btn-primary" id="assignRiderSubmitBtn" onclick="submitAssignRider()">Assign rider</button>
+      </div>
+    </div>
+  </div>
+
   <div id="manualOrderModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="manualOrderModalTitle">
     <div class="modal-box modal-lg" onclick="event.stopPropagation()">
       <div class="modal-header">
@@ -4189,6 +4285,7 @@
       if (document.hidden) return true;
       if (document.getElementById('orderDetailModal').classList.contains('is-open')) return true;
       if (document.getElementById('orderEditModal').classList.contains('is-open')) return true;
+      if (document.getElementById('assignRiderModal').classList.contains('is-open')) return true;
       if (document.getElementById('manualOrderModal').classList.contains('is-open')) return true;
       if (openOrderMenuId) return true;
       return false;
@@ -4598,6 +4695,7 @@
     let ordersPage = 1;
     const ordersPageSize = 12;
     let cachedOrders = [];
+    let cachedRiders = [];
     let cachedOrderNoById = {};
 
     function formatOrderNo(n) {
@@ -4687,6 +4785,121 @@
       }).join('') + '</div>';
     }
 
+    function renderOrderRiderBadge(o) {
+      if (o.rider_id) {
+        const name = o.rider_name || o.rider_id;
+        const phone = o.rider_phone ? ' · ' + o.rider_phone : '';
+        return '<span class="rider-assigned-badge">🛵 ' + esc(name) + esc(phone) + '</span>';
+      }
+      return '<span class="rider-unassigned-badge">No rider</span>';
+    }
+
+    async function ensureRidersLoaded(force) {
+      if (!force && cachedRiders.length) return cachedRiders;
+      try {
+        const r = await fetch(API + '/api/admin/riders');
+        if (!r.ok) return cachedRiders;
+        cachedRiders = await r.json();
+      } catch (_) {}
+      return cachedRiders;
+    }
+
+    function updateAssignRiderPreview() {
+      const select = document.getElementById('assignRiderSelect');
+      const preview = document.getElementById('assignRiderPreview');
+      const riderId = select.value;
+      const rider = cachedRiders.find(function(x) { return x.id === riderId; });
+      if (!rider) {
+        preview.classList.add('hidden');
+        return;
+      }
+      preview.classList.remove('hidden');
+      document.getElementById('assignRiderPreviewName').textContent = rider.name || 'Rider';
+      document.getElementById('assignRiderPreviewMeta').innerHTML =
+        'Phone: ' + esc(rider.phone || '-') + '<br>Email: ' + esc(rider.email || '-') + '<br>ID: ' + esc(rider.id);
+    }
+
+    async function openAssignRiderModal(orderId) {
+      closeAllOrderMenus();
+      closeOrderDetail();
+      const o = cachedOrders.find(function(x) { return x.id === orderId; });
+      if (!o) return;
+      const orderNo = formatOrderNo(cachedOrderNoById[o.id] || 0);
+      document.getElementById('assignRiderOrderId').value = o.id;
+      document.getElementById('assignRiderModalTitle').textContent = 'Assign rider · Order #' + orderNo;
+      document.getElementById('assignRiderModalSubtitle').textContent =
+        (o.customer_name || 'Customer') + ' · ' + (o.address_line || 'No address');
+
+      await ensureRidersLoaded(true);
+      const select = document.getElementById('assignRiderSelect');
+      const emptyEl = document.getElementById('assignRiderEmpty');
+      const unassignBtn = document.getElementById('assignRiderUnassignBtn');
+      select.innerHTML = '<option value="">— Choose rider —</option>' +
+        cachedRiders.map(function(r) {
+          return '<option value="' + esc(r.id) + '">' + esc(r.name || r.phone || r.id) + ' · ' + esc(r.phone || '-') + '</option>';
+        }).join('');
+
+      if (cachedRiders.length === 0) {
+        emptyEl.style.display = 'block';
+        select.disabled = true;
+      } else {
+        emptyEl.style.display = 'none';
+        select.disabled = false;
+      }
+
+      select.value = o.rider_id || '';
+      updateAssignRiderPreview();
+      unassignBtn.style.display = o.rider_id ? 'inline-flex' : 'none';
+      document.getElementById('assignRiderModal').classList.add('is-open');
+    }
+
+    function closeAssignRiderModal() {
+      document.getElementById('assignRiderModal').classList.remove('is-open');
+    }
+
+    async function submitAssignRider() {
+      const orderId = document.getElementById('assignRiderOrderId').value;
+      const riderId = document.getElementById('assignRiderSelect').value;
+      if (!orderId) return;
+      if (!riderId) {
+        alert('Please select a rider.');
+        return;
+      }
+      try {
+        const r = await fetch(API + '/api/admin/orders/' + encodeURIComponent(orderId), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ riderId: riderId }),
+        });
+        const data = await r.json().catch(function() { return {}; });
+        if (!r.ok) throw new Error(data.error || 'Could not assign rider');
+        closeAssignRiderModal();
+        loadOrders(ordersPage);
+        loadStats();
+      } catch (e) {
+        alert(e.message || 'Could not assign rider');
+      }
+    }
+
+    async function unassignRiderFromOrder() {
+      const orderId = document.getElementById('assignRiderOrderId').value;
+      if (!orderId) return;
+      if (!confirm('Remove rider from this order?')) return;
+      try {
+        const r = await fetch(API + '/api/admin/orders/' + encodeURIComponent(orderId), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ riderId: null }),
+        });
+        const data = await r.json().catch(function() { return {}; });
+        if (!r.ok) throw new Error(data.error || 'Could not remove rider');
+        closeAssignRiderModal();
+        loadOrders(ordersPage);
+      } catch (e) {
+        alert(e.message || 'Could not remove rider');
+      }
+    }
+
     function openOrderDetail(orderId) {
       const o = cachedOrders.find(function(x) { return x.id === orderId; });
       if (!o) return;
@@ -4698,6 +4911,9 @@
           '<div class="order-detail-box"><div class="label">Status</div><div class="value">' + statusBadge(o.status) + '</div></div>' +
           '<div class="order-detail-box"><div class="label">Source</div><div class="value">' + orderSourceBadge(o) + ' ' + esc(orderSourceLabel(o)) + '</div></div>' +
           '<div class="order-detail-box"><div class="label">Type</div><div class="value">' + esc(o.address_label || '-') + '</div></div>' +
+          '<div class="order-detail-box"><div class="label">Rider</div><div class="value">' + renderOrderRiderBadge(o) +
+            (['delivered', 'cancelled'].includes(o.status) ? '' : ' <button type="button" class="btn-assign-rider" style="margin-left:8px" onclick="openAssignRiderModal(\'' + esc(o.id) + '\')">' + (o.rider_id ? 'Change rider' : 'Assign rider') + '</button>') +
+          '</div></div>' +
           '<div class="order-detail-box"><div class="label">Date</div><div class="value">' + esc(o.created_at) + '</div></div>' +
         '</div>' +
         '<div class="order-detail-box" style="margin-bottom:16px"><div class="label">Delivery address</div><div class="value">' + esc(o.address_line || '-') + '</div></div>' +
@@ -5191,6 +5407,7 @@
                   <div class="order-card-menu-wrap">
                     <button type="button" class="order-menu-btn" onclick="toggleOrderMenu('${esc(o.id)}', event)" aria-label="Order actions" title="More actions">&#8942;</button>
                     <div class="order-menu-dropdown hidden" id="orderMenu-${esc(o.id)}" onclick="event.stopPropagation()">
+                      <button type="button" onclick="event.stopPropagation(); openAssignRiderModal('${esc(o.id)}')">Assign rider</button>
                       <button type="button" onclick="event.stopPropagation(); openOrderEdit('${esc(o.id)}')">Edit order</button>
                       <button type="button" class="is-danger" onclick="event.stopPropagation(); deleteOrder('${esc(o.id)}')">Delete order</button>
                     </div>
@@ -5207,21 +5424,28 @@
                   <span class="order-value muted">${esc(o.address_line)}</span>
                 </div>
                 <div class="order-row">
+                  <span class="order-label">Rider</span>
+                  <span class="order-value">${renderOrderRiderBadge(o)}</span>
+                </div>
+                <div class="order-row">
                   <span class="order-label">Items</span>
                   ${renderOrderItemsPreview(o.items)}
                 </div>
               </div>
               <div class="order-card-footer" onclick="event.stopPropagation()">
                 <div class="order-total">Total: <span>PKR ${esc(o.total)}</span></div>
-                <div class="status-select-wrap">
-                  <label for="status-${esc(o.id)}">Update</label>
-                  <select id="status-${esc(o.id)}" onchange="updateOrderStatus('${esc(o.id)}', this.value)">
+                <div class="order-footer-actions">
+                  <button type="button" class="btn-assign-rider" onclick="openAssignRiderModal('${esc(o.id)}')">${o.rider_id ? 'Change rider' : 'Assign rider'}</button>
+                  <div class="status-select-wrap">
+                    <label for="status-${esc(o.id)}">Update</label>
+                    <select id="status-${esc(o.id)}" onchange="updateOrderStatus('${esc(o.id)}', this.value)">
                     <option ${o.status === 'placed' ? 'selected' : ''}>placed</option>
                     <option ${o.status === 'confirmed' ? 'selected' : ''}>confirmed</option>
                     <option ${o.status === 'preparing' ? 'selected' : ''}>preparing</option>
                     <option ${o.status === 'out_for_delivery' ? 'selected' : ''}>out_for_delivery</option>
                     <option ${o.status === 'delivered' ? 'selected' : ''}>delivered</option>
                   </select>
+                  </div>
                 </div>
               </div>
             </article>
@@ -5346,6 +5570,7 @@
         const r = await fetch(API + '/api/admin/riders');
         if (!r.ok) throw new Error(r.status);
         const riders = await r.json();
+        cachedRiders = riders;
         el.innerHTML = riders.length === 0
           ? '<p class="empty-msg">No riders yet. Create one above — only admin can add rider accounts.</p>'
           : '<div class="orders-grid">' + riders.map((u) => `
@@ -6052,6 +6277,10 @@
       if (e.target === this) closeOrderDetail();
     });
 
+    document.getElementById('assignRiderModal').addEventListener('click', function(e) {
+      if (e.target === this) closeAssignRiderModal();
+    });
+
     document.getElementById('manualOrderModal').addEventListener('click', function(e) {
       if (e.target === this) closeManualOrderModal();
     });
@@ -6070,6 +6299,7 @@
       if (e.key !== 'Escape') return;
       if (document.getElementById('orderDetailModal').classList.contains('is-open')) closeOrderDetail();
       if (document.getElementById('orderEditModal').classList.contains('is-open')) closeOrderEditModal();
+      if (document.getElementById('assignRiderModal').classList.contains('is-open')) closeAssignRiderModal();
       if (document.getElementById('manualOrderModal').classList.contains('is-open')) closeManualOrderModal();
       if (document.getElementById('trashDetailModal').classList.contains('is-open')) closeTrashDetail();
       if (document.getElementById('addonEditModal').classList.contains('is-open')) closeAddonEditModal();

@@ -487,7 +487,7 @@ app.post('/api/orders', (req, res) => {
       }
     }
     try {
-      notifyRidersNewOrder(id, customerName, addressLine, total);
+      // Riders are assigned manually from the admin dashboard.
     } catch (_) {}
     if (loyaltyPointsEarned > 0 && uid !== 'guest') {
       try {
@@ -785,7 +785,12 @@ function insertOrderItems(orderId, items) {
 app.get('/api/admin/orders', (req, res) => {
   try {
     const menuMap = buildMenuImageMap();
-    const orders = all('SELECT * FROM orders ORDER BY created_at DESC');
+    const orders = all(
+      `SELECT o.*, r.name AS rider_name, r.phone AS rider_phone, r.email AS rider_email
+       FROM orders o
+       LEFT JOIN users r ON r.id = o.rider_id
+       ORDER BY o.created_at DESC`
+    );
     for (const o of orders) {
       o.items = loadOrderItemsForAdmin(o.id, menuMap);
       o.items_text = o.items.length ? formatOrderItemsText(o.items) : o.items_text || '';
@@ -880,7 +885,7 @@ app.post('/api/admin/orders', (req, res) => {
     insertOrderItems(id, items);
 
     try {
-      notifyRidersNewOrder(id, customerName, addressLine, total);
+      // Riders are assigned manually from the admin dashboard.
     } catch (_) {}
 
     res.json({ id, status, orderSource: source, externalOrderId: externalOrderId || null });
@@ -926,12 +931,38 @@ app.patch('/api/admin/orders/:id', (req, res) => {
       params.push(body.special_instructions || null);
     }
 
+    let assignedRiderId = null;
+    let unassignedRider = false;
+    if (body.riderId !== undefined) {
+      const rawRiderId = body.riderId;
+      if (rawRiderId === null || rawRiderId === '') {
+        updates.push('rider_id = ?');
+        params.push(null);
+        if (existing.rider_id) unassignedRider = true;
+      } else {
+        const riderId = String(rawRiderId);
+        const rider = getParams("SELECT id, name, phone, role FROM users WHERE id = ?", [riderId]);
+        if (!rider || rider.role !== 'rider') {
+          return res.status(400).json({ error: 'Invalid rider selected' });
+        }
+        updates.push('rider_id = ?');
+        params.push(riderId);
+        assignedRiderId = riderId;
+        if (existing.status === 'placed') {
+          updates.push('status = ?');
+          params.push('confirmed');
+        }
+      }
+    }
+
     if (!updates.length) return res.status(400).json({ error: 'No fields to update' });
 
     params.push(id);
     run('UPDATE orders SET ' + updates.join(', ') + ' WHERE id = ?', params);
 
     const newStatus = body.status !== undefined ? body.status : existing.status;
+    const statusAfterAssign =
+      assignedRiderId && existing.status === 'placed' && body.status === undefined ? 'confirmed' : newStatus;
     if (body.status !== undefined && body.status !== existing.status && inventoryService) {
       try {
         inventoryService.onOrderStatusChange(id, existing.status, body.status);
@@ -968,7 +999,47 @@ app.patch('/api/admin/orders/:id', (req, res) => {
       }
     }
 
-    res.json({ id, status: newStatus });
+    if (assignedRiderId && assignedRiderId !== existing.rider_id) {
+      const rider = getParams('SELECT name FROM users WHERE id = ?', [assignedRiderId]);
+      const shortId = id.replace('order_', '#');
+      const assignTitle = 'New delivery assigned';
+      const assignBody = `Order ${shortId} · ${existing.customer_name || 'Customer'} · Rs. ${existing.total}`;
+      if (pushService) {
+        pushService.notifyUser(assignedRiderId, assignTitle, assignBody, {
+          orderId: id,
+          type: 'rider_assignment',
+        });
+      } else {
+        try {
+          run('INSERT INTO notifications (user_id, title, body) VALUES (?, ?, ?)', [
+            assignedRiderId,
+            assignTitle,
+            assignBody,
+          ]);
+        } catch (_) {}
+      }
+      if (existing.user_id && existing.user_id !== 'guest') {
+        const customerTitle = 'Rider assigned';
+        const customerBody = `Your order ${shortId} has been assigned to ${rider?.name || 'a rider'}.`;
+        if (pushService) {
+          pushService.notifyUser(existing.user_id, customerTitle, customerBody, {
+            orderId: id,
+            type: 'order_update',
+          });
+        } else {
+          try {
+            run('INSERT INTO notifications (user_id, title, body) VALUES (?, ?, ?)', [
+              existing.user_id,
+              customerTitle,
+              customerBody,
+            ]);
+          } catch (_) {}
+        }
+      }
+    }
+
+    const updated = getParams('SELECT status, rider_id FROM orders WHERE id = ?', [id]);
+    res.json({ id, status: updated.status, riderId: updated.rider_id || null });
   } catch (e) {
     res.status(500).json({ error: String(e.message) });
   }

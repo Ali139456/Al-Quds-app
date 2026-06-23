@@ -159,16 +159,16 @@ function createRiderApi(db, pushService, inventoryService) {
         const available = attachItems(
           allParams(
             `SELECT * FROM orders
-             WHERE status IN ('placed', 'confirmed', 'preparing')
-               AND (rider_id IS NULL OR rider_id = '')
+             WHERE rider_id = ?
+               AND status IN ('placed', 'confirmed', 'preparing')
              ORDER BY created_at DESC`,
-            []
+            [riderId]
           )
         );
         const active = attachItems(
           allParams(
             `SELECT * FROM orders
-             WHERE rider_id = ? AND status NOT IN ('delivered', 'cancelled')
+             WHERE rider_id = ? AND status = 'out_for_delivery'
              ORDER BY created_at DESC`,
             [riderId]
           )
@@ -254,11 +254,8 @@ function createRiderApi(db, pushService, inventoryService) {
         }
         const order = getParams('SELECT * FROM orders WHERE id = ?', [req.params.id]);
         if (!order) return res.status(404).json({ error: 'Order not found' });
-        const isAssigned = order.rider_id === riderId;
-        const isAvailable =
-          !order.rider_id && ['placed', 'confirmed', 'preparing'].includes(order.status);
-        if (!isAssigned && !isAvailable) {
-          return res.status(403).json({ error: 'Order not available to you' });
+        if (order.rider_id !== riderId) {
+          return res.status(403).json({ error: 'This order is not assigned to you' });
         }
         order.items = loadOrderItems(order.id);
         res.json(order);
@@ -268,42 +265,9 @@ function createRiderApi(db, pushService, inventoryService) {
     });
 
     app.patch('/api/rider/orders/:id/accept', (req, res) => {
-      try {
-        const { id } = req.params;
-        const { riderId } = req.body || {};
-        if (!riderId) return res.status(400).json({ error: 'riderId required' });
-
-        const rider = getParams('SELECT id, role, name FROM users WHERE id = ?', [riderId]);
-        if (!rider || rider.role !== 'rider') {
-          return res.status(403).json({ error: 'Not a rider account' });
-        }
-
-        const order = getParams('SELECT * FROM orders WHERE id = ?', [id]);
-        if (!order) return res.status(404).json({ error: 'Order not found' });
-        if (order.rider_id && order.rider_id !== riderId) {
-          return res.status(409).json({ error: 'Order already assigned to another rider' });
-        }
-        if (!['placed', 'confirmed', 'preparing'].includes(order.status)) {
-          return res.status(400).json({ error: 'Order cannot be accepted in current status' });
-        }
-
-        const nextStatus = order.status === 'placed' ? 'confirmed' : order.status;
-        run('UPDATE orders SET rider_id = ?, status = ? WHERE id = ?', [riderId, nextStatus, id]);
-
-        if (order.user_id && order.user_id !== 'guest') {
-          const shortId = id.replace('order_', '#');
-          pushNotifyUser(
-            order.user_id,
-            'Rider assigned',
-            `Your order ${shortId} has been accepted by a rider.`,
-            { orderId: id, type: 'order_update' }
-          );
-        }
-
-        res.json({ ok: true, id, status: nextStatus, riderId });
-      } catch (e) {
-        res.status(500).json({ error: String(e.message) });
-      }
+      res.status(403).json({
+        error: 'Orders are assigned by admin. Check your assigned deliveries list.',
+      });
     });
 
     app.patch('/api/rider/orders/:id/status', (req, res) => {

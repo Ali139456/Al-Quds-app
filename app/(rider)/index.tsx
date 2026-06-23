@@ -72,7 +72,7 @@ export default function RiderDashboard() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'dark'];
   const { user, logout } = useAuth();
-  const { available, active, completedCount, isLoading, refresh, acceptOrder, unreadCount, fetchCompletedOrders } =
+  const { available, active, completedCount, isLoading, refresh, unreadCount, fetchCompletedOrders } =
     useRider();
 
   const onRefresh = useCallback(() => refresh(), [refresh]);
@@ -107,12 +107,12 @@ export default function RiderDashboard() {
         >
           <View style={styles.heroContent}>
             <Text style={[styles.heroTitle, { color: colors.text }]}>
-              {available.length > 0 ? 'New requests nearby' : 'You are online'}
+              {available.length > 0 ? 'New delivery assigned' : 'Waiting for assignments'}
             </Text>
             <Text style={[styles.heroSub, { color: colors.muted }]}>
               {available.length > 0
-                ? `${available.length} order${available.length > 1 ? 's' : ''} ready to accept`
-                : 'Pull to refresh when a new order arrives'}
+                ? `${available.length} order${available.length > 1 ? 's' : ''} assigned by admin`
+                : 'Admin will assign orders to you — pull to refresh'}
             </Text>
           </View>
           <View style={[styles.heroOrb, { backgroundColor: colors.accent + '25' }]}>
@@ -121,14 +121,14 @@ export default function RiderDashboard() {
         </LinearGradient>
 
         <View style={styles.statsRow}>
-          <StatPill label="New" value={available.length} color="#F59E0B" colors={colors} />
+          <StatPill label="Assigned" value={available.length} color="#F59E0B" colors={colors} />
           <StatPill label="Active" value={active.length} color="#60A5FA" colors={colors} />
           <StatPill label="Done" value={completedCount} color="#4ADE80" colors={colors} />
         </View>
 
-        <SectionHeader title="New orders" count={available.length} icon="inbox" colors={colors} />
+        <SectionHeader title="Assigned orders" count={available.length} icon="inbox" colors={colors} />
         {available.length === 0 ? (
-          <EmptyBlock message="No new orders right now. Stay online!" icon="📭" colors={colors} />
+          <EmptyBlock message="No assigned orders yet. Admin will assign deliveries to you." icon="📭" colors={colors} />
         ) : (
           available.map((order) => (
             <RiderOrderCard
@@ -136,15 +136,13 @@ export default function RiderDashboard() {
               order={order}
               colors={colors}
               onPress={() => router.push(`/(rider)/delivery/${order.id}`)}
-              actionLabel="Accept"
-              onAction={() => acceptOrder(order.id)}
             />
           ))
         )}
 
-        <SectionHeader title="My deliveries" count={active.length} icon="motorcycle" colors={colors} />
+        <SectionHeader title="Out for delivery" count={active.length} icon="motorcycle" colors={colors} />
         {active.length === 0 ? (
-          <EmptyBlock message="No active deliveries" icon="🛵" colors={colors} />
+          <EmptyBlock message="No deliveries in progress" icon="🛵" colors={colors} />
         ) : (
           active.map((order) => (
             <RiderOrderCard
