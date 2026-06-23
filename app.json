@@ -50,7 +50,8 @@
         {
           "icon": "./assets/images/al-quds-icon.png",
           "color": "#D1AB66",
-          "defaultChannel": "default",
+          "defaultChannel": "orders",
+          "sounds": [],
           "enableBackgroundRemoteNotifications": true
         }
       ],

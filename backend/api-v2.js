@@ -159,21 +159,25 @@ function registerV2Routes(app, db, uploadPayment) {
     try {
       const { userId, token, platform } = req.body || {};
       if (!token) return res.status(400).json({ error: 'token required' });
+      if (!userId || userId === 'guest') {
+        return res.status(400).json({ error: 'userId required — log in and enable notifications in the app' });
+      }
       const existing = getParams('SELECT id FROM push_tokens WHERE token = ?', [token]);
       if (existing) {
         run('UPDATE push_tokens SET user_id = ?, platform = ? WHERE token = ?', [
-          userId || 'guest',
+          userId,
           platform || 'unknown',
           token,
         ]);
       } else {
         run('INSERT INTO push_tokens (user_id, token, platform) VALUES (?, ?, ?)', [
-          userId || 'guest',
+          userId,
           token,
           platform || 'unknown',
         ]);
       }
-      res.json({ ok: true });
+      const countRow = getParams('SELECT COUNT(*) as c FROM push_tokens WHERE user_id = ?', [userId]);
+      res.json({ ok: true, registered: true, tokenCount: Number(countRow?.c) || 1 });
     } catch (e) {
       res.status(500).json({ error: String(e.message) });
     }

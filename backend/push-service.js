@@ -10,11 +10,29 @@ function createPushService({ run, all, getParams, allParams }) {
       try {
         const res = await fetch('https://exp.host/--/api/v2/push/send', {
           method: 'POST',
-          headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+          headers: {
+            Accept: 'application/json',
+            'Accept-encoding': 'gzip, deflate',
+            'Content-Type': 'application/json',
+          },
           body: JSON.stringify(chunk),
         });
-        if (res.ok) sent += chunk.length;
-      } catch (_) {}
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          console.error('Expo push HTTP error:', res.status, payload);
+          continue;
+        }
+        const tickets = Array.isArray(payload.data) ? payload.data : [];
+        for (const ticket of tickets) {
+          if (ticket.status === 'ok') {
+            sent += 1;
+          } else {
+            console.error('Expo push ticket error:', ticket.message, ticket.details || '');
+          }
+        }
+      } catch (err) {
+        console.error('Expo push send failed:', err.message || err);
+      }
     }
     return sent;
   }
@@ -34,7 +52,10 @@ function createPushService({ run, all, getParams, allParams }) {
     if (!userId || userId === 'guest') return;
     insertNotification(userId, title, body);
     const tokens = allParams('SELECT token FROM push_tokens WHERE user_id = ?', [userId]);
-    if (!tokens.length) return;
+    if (!tokens.length) {
+      console.warn(`Push skipped for ${userId}: no device token registered`);
+      return;
+    }
     const messages = tokens.map((t) => ({
       to: t.token,
       sound: 'default',
@@ -42,9 +63,12 @@ function createPushService({ run, all, getParams, allParams }) {
       body,
       data,
       priority: 'high',
-      channelId: 'default',
+      channelId: 'orders',
     }));
-    await sendExpoPushMessages(messages);
+    const sent = await sendExpoPushMessages(messages);
+    if (sent === 0 && tokens.length > 0) {
+      console.warn(`Push delivery failed for ${userId} (${tokens.length} token(s))`);
+    }
   }
 
   function getUserIdsForTarget(target) {
@@ -84,7 +108,7 @@ function createPushService({ run, all, getParams, allParams }) {
         body,
         data,
         priority: 'high',
-        channelId: 'default',
+        channelId: 'orders',
       }));
       pushCount = await sendExpoPushMessages(messages);
     }

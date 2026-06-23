@@ -1,7 +1,8 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 import { API_BASE_URL } from '@/constants/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { scheduleLocalNotification } from '@/services/notifications';
 
 export type InboxNotification = {
   id: number;
@@ -36,10 +37,14 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<InboxNotification[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const knownIdsRef = useRef<Set<number>>(new Set());
+  const initializedRef = useRef(false);
 
   const refreshNotifications = useCallback(async () => {
     if (!user?.id || !API_BASE_URL) {
       setNotifications([]);
+      knownIdsRef.current = new Set();
+      initializedRef.current = false;
       return;
     }
     setIsLoading(true);
@@ -47,7 +52,21 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       const res = await fetch(`${API_BASE_URL}/api/notifications?userId=${encodeURIComponent(user.id)}`);
       const data = await res.json();
       if (Array.isArray(data)) {
-        setNotifications(data.map(mapRow));
+        const mapped = data.map(mapRow);
+        const known = knownIdsRef.current;
+        const appState = AppState.currentState;
+
+        if (initializedRef.current && appState !== 'active') {
+          for (const n of mapped) {
+            if (!known.has(n.id)) {
+              await scheduleLocalNotification(n.title, n.body, { type: 'inbox' });
+            }
+          }
+        }
+
+        mapped.forEach((n) => known.add(n.id));
+        initializedRef.current = true;
+        setNotifications(mapped);
       } else {
         setNotifications([]);
       }
@@ -86,6 +105,8 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   }, [refreshNotifications, user?.id]);
 
   useEffect(() => {
+    knownIdsRef.current = new Set();
+    initializedRef.current = false;
     refreshNotifications();
   }, [refreshNotifications]);
 
@@ -99,8 +120,20 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     if (!user?.id) return;
-    const timer = setInterval(refreshNotifications, 30000);
-    return () => clearInterval(timer);
+    const pollMs = () => (AppState.currentState === 'active' ? 30000 : 12000);
+    let timer: ReturnType<typeof setInterval>;
+
+    const start = () => {
+      clearInterval(timer);
+      timer = setInterval(refreshNotifications, pollMs());
+    };
+
+    start();
+    const sub = AppState.addEventListener('change', start);
+    return () => {
+      clearInterval(timer);
+      sub.remove();
+    };
   }, [refreshNotifications, user?.id]);
 
   const unreadCount = useMemo(
