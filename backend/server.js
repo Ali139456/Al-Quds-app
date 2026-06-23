@@ -365,6 +365,25 @@ app.get('/api/menu', (req, res) => {
   }
 });
 
+function ensureOrderUser(userId, customerName, customerPhone) {
+  const uid = userId || 'guest';
+  const existing = getParams('SELECT id FROM users WHERE id = ?', [uid]);
+  if (existing) return uid;
+  const email =
+    uid === 'guest'
+      ? 'guest@local.app'
+      : `${String(uid).replace(/[^a-zA-Z0-9]/g, '') || 'user'}@app.local`;
+  run('INSERT OR IGNORE INTO users (id, email, name, phone, role, password_hash) VALUES (?, ?, ?, ?, ?, ?)', [
+    uid,
+    email,
+    customerName || (uid === 'guest' ? 'Guest' : 'Customer'),
+    customerPhone || null,
+    'customer',
+    '',
+  ]);
+  return uid;
+}
+
 app.post('/api/orders', (req, res) => {
   try {
     const storeRow = get("SELECT value FROM app_settings WHERE key = 'store_open'");
@@ -420,7 +439,7 @@ app.post('/api/orders', (req, res) => {
       }
     }
     const id = bodyId && String(bodyId).startsWith('order_') ? bodyId : `order_${Date.now()}`;
-    const uid = userId || 'guest';
+    const uid = ensureOrderUser(userId, customerName, customerPhone);
     run(
       `INSERT INTO orders (id, user_id, total, subtotal, address_label, address_line, latitude, longitude, customer_name, customer_phone, status, payment_method, coupon_code, discount_amount, delivery_fee, scheduled_at, contactless, special_instructions, payment_proof_url, tip_amount, wallet_used, loyalty_points_earned) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [

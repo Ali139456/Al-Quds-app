@@ -327,6 +327,14 @@ function runSeed() {
     'admin@alquds.local',
     adminHash,
   ]);
+  run('INSERT OR IGNORE INTO users (id, email, name, phone, role, password_hash) VALUES (?, ?, ?, ?, ?, ?)', [
+    'guest',
+    'guest@local.app',
+    'Guest',
+    null,
+    'customer',
+    '',
+  ]);
 }
 
 module.exports = {

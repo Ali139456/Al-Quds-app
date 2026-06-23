@@ -126,10 +126,24 @@ export function OrderHistoryProvider({ children }: { children: React.ReactNode }
     return () => { cancelled = true; };
   }, [user?.id, fetchOrdersFromApi, mergeOrders]);
 
+  const rollbackLocalOrder = useCallback(async (orderId: string) => {
+    setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    const list = await getStoredOrders();
+    await setStoredOrders(list.filter((o) => o.id !== orderId));
+  }, []);
+
   const addOrder = useCallback(
     async (items: CartItem[], total: number, address: SavedAddress, details?: CheckoutDetails) => {
       if (!isAddressInDeliveryZone(address)) {
         throw new Error(DELIVERY_ZONE_OUT_MESSAGE);
+      }
+      if (
+        address.latitude == null ||
+        address.longitude == null ||
+        !Number.isFinite(address.latitude) ||
+        !Number.isFinite(address.longitude)
+      ) {
+        throw new Error('Delivery location coordinates are missing. Please re-select your address.');
       }
       const userId = user?.id ?? 'guest';
       const customerName = details?.customerName ?? user?.name ?? '';
@@ -170,6 +184,21 @@ export function OrderHistoryProvider({ children }: { children: React.ReactNode }
       setOrders((prev) => [order, ...prev]);
 
       if (API_BASE_URL) {
+        if (user) {
+          try {
+            await fetch(`${API_BASE_URL}/api/users`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                phone: user.phone,
+              }),
+            });
+          } catch (_) {}
+        }
+
         try {
           const res = await fetch(`${API_BASE_URL}/api/orders`, {
             method: 'POST',
@@ -203,23 +232,17 @@ export function OrderHistoryProvider({ children }: { children: React.ReactNode }
           if (!res.ok) {
             const data = await res.json().catch(() => ({}));
             const msg = data?.error || 'Could not place order on server.';
-            if (res.status === 409 || data?.stockErrors) {
-              setOrders((prev) => prev.filter((o) => o.id !== order.id));
-              const list = await getStoredOrders();
-              await setStoredOrders(list.filter((o) => o.id !== order.id));
-              throw new Error(msg);
-            }
-            if (String(msg).toLowerCase().includes('deliver')) {
-              throw new Error(msg);
-            }
+            await rollbackLocalOrder(order.id);
+            throw new Error(msg);
           }
         } catch (e) {
-          if (e instanceof Error && (e.message.includes('deliver') || e.message.toLowerCase().includes('stock') || e.message.toLowerCase().includes('out of'))) throw e;
-          // Backend optional for other failures; order already saved locally
+          if (e instanceof Error) throw e;
+          await rollbackLocalOrder(order.id);
+          throw new Error('Could not reach server. Check your internet connection.');
         }
       }
     },
-    [user]
+    [user, rollbackLocalOrder]
   );
 
   const userOrders = user ? orders.filter((o) => o.userId === user.id) : orders.filter((o) => o.userId === 'guest');
