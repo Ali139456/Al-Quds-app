@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, Platform, Linking, Pressable } from 'react-native';
+import { View, StyleSheet, Linking, Pressable } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
@@ -29,32 +28,10 @@ export default function OrderTrackingMap({
 }: Props) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
-  const [MapView, setMapView] = useState<typeof import('react-native-maps')['default'] | null>(null);
-  const [Marker, setMarker] = useState<typeof import('react-native-maps').Marker | null>(null);
-  const mapRef = useRef<any>(null);
 
   const hasRider = riderLat != null && riderLng != null;
   const distance =
     hasRider ? formatDistanceKm(distanceKm(riderLat!, riderLng!, deliveryLat, deliveryLng)) : null;
-
-  useEffect(() => {
-    if (Platform.OS !== 'web') {
-      import('react-native-maps').then((m) => {
-        setMapView(m.default);
-        setMarker(m.Marker);
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!mapRef.current || Platform.OS === 'web') return;
-    const points = [{ latitude: deliveryLat, longitude: deliveryLng }];
-    if (hasRider) points.push({ latitude: riderLat!, longitude: riderLng! });
-    mapRef.current.fitToCoordinates(points, {
-      edgePadding: { top: 48, right: 48, bottom: 48, left: 48 },
-      animated: true,
-    });
-  }, [deliveryLat, deliveryLng, riderLat, riderLng, hasRider]);
 
   const openDirections = () => {
     const url = hasRider
@@ -70,46 +47,22 @@ export default function OrderTrackingMap({
 
   return (
     <View style={[styles.wrap, { borderColor: colors.border }]}>
-      {Platform.OS !== 'web' && MapView && Marker ? (
-        <MapView
-          ref={mapRef}
-          style={[styles.map, { height }]}
-          initialRegion={{
-            latitude: deliveryLat,
-            longitude: deliveryLng,
-            latitudeDelta: 0.02,
-            longitudeDelta: 0.02,
+      <View style={[styles.webMap, { height }]}>
+        {/* @ts-expect-error web iframe */}
+        <iframe
+          key={embedUrl}
+          title="Live tracking map"
+          src={embedUrl}
+          style={{
+            border: 'none',
+            width: '100%',
+            height: '100%',
+            borderRadius: Radius.md,
+            display: 'block',
           }}
-        >
-          <Marker coordinate={{ latitude: deliveryLat, longitude: deliveryLng }} title="Delivery" pinColor="#D1AB66" />
-          {hasRider ? (
-            <Marker coordinate={{ latitude: riderLat!, longitude: riderLng! }} title="Rider" pinColor="#3b82f6" />
-          ) : null}
-        </MapView>
-      ) : (
-        <View style={[styles.webMap, { height }]}>
-          {Platform.OS === 'web' ? (
-            // @ts-expect-error web iframe
-            <iframe
-              key={embedUrl}
-              title="Live tracking map"
-              src={embedUrl}
-              style={{
-                border: 'none',
-                width: '100%',
-                height: '100%',
-                borderRadius: Radius.md,
-                display: 'block',
-              }}
-              loading="lazy"
-            />
-          ) : (
-            <View style={[styles.webFallback, { backgroundColor: colors.card }]}>
-              <Text style={{ color: colors.muted }}>Loading map…</Text>
-            </View>
-          )}
-        </View>
-      )}
+          loading="lazy"
+        />
+      </View>
 
       {showLegend ? (
         <View style={[styles.legend, { backgroundColor: colors.card }]}>
@@ -138,7 +91,6 @@ export default function OrderTrackingMap({
           </Pressable>
         </View>
       ) : null}
-
     </View>
   );
 }
@@ -150,9 +102,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: Spacing.md,
   },
-  map: { width: '100%' },
   webMap: { width: '100%', overflow: 'hidden' },
-  webFallback: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   legend: { padding: Spacing.md, gap: 6 },
   legendRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dot: { width: 10, height: 10, borderRadius: 5 },

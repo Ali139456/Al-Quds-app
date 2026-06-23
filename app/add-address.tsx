@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import {
   StyleSheet,
   TextInput,
@@ -27,11 +27,11 @@ import {
 } from '@/constants/location';
 import {
   RAWALPINDI_AREAS,
-  RAWALPINDI_CENTER,
   getAreaByName,
   type RawalpindiArea,
 } from '@/constants/rawalpindiAreas';
 import AreaDropdown from '@/components/AreaDropdown';
+import AddressMapView from '@/components/AddressMapView';
 import { useDelivery } from '@/contexts/DeliveryContext';
 
 function coordsFromArea(areaName: string, selectedArea: RawalpindiArea | null) {
@@ -56,18 +56,7 @@ export default function AddAddressScreen() {
   const [lng, setLng] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [locating, setLocating] = useState(false);
-  const [MapView, setMapView] = useState<typeof import('react-native-maps')['default'] | null>(null);
-  const [Marker, setMarker] = useState<typeof import('react-native-maps').Marker | null>(null);
-  const mapRef = useRef<any>(null);
-
-  useEffect(() => {
-    if (Platform.OS !== 'web') {
-      import('react-native-maps').then((m) => {
-        setMapView(m.default);
-        setMarker(m.Marker);
-      });
-    }
-  }, []);
+  const mapRef = useRef<{ animateToRegion: (region: unknown) => void } | null>(null);
 
   const addressLine =
     [areaName.trim(), houseStreet.trim()].filter(Boolean).join(', ') ||
@@ -198,36 +187,19 @@ export default function AddAddressScreen() {
         location on the map.
       </Text>
 
-      {Platform.OS !== 'web' && MapView && Marker ? (
+      {Platform.OS !== 'web' ? (
         <View style={styles.mapWrap}>
-          <MapView
-            ref={mapRef}
-            style={styles.map}
-            initialRegion={
-              lat != null && lng != null
-                ? {
-                    latitude: lat,
-                    longitude: lng,
-                    latitudeDelta: 0.012,
-                    longitudeDelta: 0.012,
-                  }
-                : RAWALPINDI_CENTER
-            }
-            onPress={(e) => {
-              const { latitude, longitude } = e.nativeEvent.coordinate;
+          <AddressMapView
+            mapRef={mapRef}
+            lat={lat}
+            lng={lng}
+            onPress={(latitude, longitude) => {
               if (isInRawalpindi(latitude, longitude)) {
                 setLat(latitude);
                 setLng(longitude);
               }
             }}
-          >
-            {lat != null && lng != null && (
-              <Marker
-                coordinate={{ latitude: lat, longitude: lng }}
-                title="Your location"
-              />
-            )}
-          </MapView>
+          />
           <View style={[styles.mapOverlay, { backgroundColor: colors.background }]}>
             <Pressable
               style={[

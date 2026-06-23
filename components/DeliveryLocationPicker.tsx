@@ -16,6 +16,7 @@ import { useDelivery } from '@/contexts/DeliveryContext';
 import { RAWALPINDI_CENTER, RAWALPINDI_AREAS } from '@/constants/rawalpindiAreas';
 import { DELIVERY_ZONE_INFO } from '@/constants/location';
 import DeliveryZoneBanner from '@/components/DeliveryZoneBanner';
+import AddressMapView from '@/components/AddressMapView';
 import { Radius, Spacing } from '@/constants/Spacing';
 
 const MAP_HEIGHT = 220;
@@ -55,33 +56,11 @@ export default function DeliveryLocationPicker() {
   } = useDelivery();
 
   const [searchText, setSearchText] = useState(guestAddressLine);
-  const [MapView, setMapView] = useState<typeof import('react-native-maps')['default'] | null>(null);
-  const [Marker, setMarker] = useState<typeof import('react-native-maps').Marker | null>(null);
-  const mapRef = useRef<any>(null);
+  const mapRef = useRef<{ animateToRegion: (region: unknown) => void } | null>(null);
 
   useEffect(() => {
     setSearchText(guestAddressLine);
   }, [guestAddressLine]);
-
-  useEffect(() => {
-    if (Platform.OS !== 'web') {
-      import('react-native-maps').then((m) => {
-        setMapView(m.default);
-        setMarker(m.Marker);
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    if (mapRef.current && guestLat != null && guestLng != null && Platform.OS !== 'web') {
-      mapRef.current.animateToRegion({
-        latitude: guestLat,
-        longitude: guestLng,
-        latitudeDelta: 0.012,
-        longitudeDelta: 0.012,
-      });
-    }
-  }, [guestLat, guestLng]);
 
   const hasPin = guestLat != null && guestLng != null;
   const osmEmbedUrl = buildOsmEmbedUrl(guestLat, guestLng);
@@ -137,30 +116,18 @@ export default function DeliveryLocationPicker() {
         ))}
       </ScrollView>
 
-      {Platform.OS !== 'web' && MapView && Marker ? (
+      {Platform.OS !== 'web' ? (
         <View style={[styles.mapWrap, { borderColor: colors.border }]}>
-          <MapView
-            ref={mapRef}
-            style={styles.map}
-            initialRegion={
-              hasPin
-                ? {
-                    latitude: guestLat!,
-                    longitude: guestLng!,
-                    latitudeDelta: 0.012,
-                    longitudeDelta: 0.012,
-                  }
-                : RAWALPINDI_CENTER
-            }
-            onPress={(e) => {
-              const { latitude, longitude } = e.nativeEvent.coordinate;
+          <AddressMapView
+            mapRef={mapRef}
+            lat={guestLat}
+            lng={guestLng}
+            height={MAP_HEIGHT}
+            markerTitle="Delivery"
+            onPress={(latitude, longitude) => {
               void handleMapPress(latitude, longitude);
             }}
-          >
-            {hasPin && (
-              <Marker coordinate={{ latitude: guestLat!, longitude: guestLng! }} title="Delivery" />
-            )}
-          </MapView>
+          />
         </View>
       ) : Platform.OS === 'web' ? (
         <View style={[styles.mapWrap, { borderColor: colors.border }]}>
