@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { User, UserRole } from '@/types';
-import { getStoredUser, setStoredUser } from '@/utils/storage';
+import { getStoredUser, setStoredUser, setRiderModeActive } from '@/utils/storage';
 import { API_BASE_URL } from '@/constants/api';
 import { toast } from '@/contexts/ToastContext';
 
@@ -46,6 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     getStoredUser().then(async (u) => {
+      await setRiderModeActive(false);
       setUser(u);
       setIsLoading(false);
       if (u && API_BASE_URL) {
@@ -205,11 +206,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const deleteAccount = useCallback(async () => {
+    await setRiderModeActive(false);
     await setStoredUser(null);
     setUser(null);
   }, []);
 
   const logout = useCallback(async () => {
+    await setRiderModeActive(false);
     await setStoredUser(null);
     setUser(null);
   }, []);

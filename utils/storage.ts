@@ -9,6 +9,7 @@ const KEYS = {
   ORDERS: '@alquds_orders',
   SELECTED_ADDRESS_ID: '@alquds_selected_address',
   DELIVERY_SESSION: '@alquds_delivery_session',
+  RIDER_MODE: '@alquds_rider_mode',
 };
 
 export type StoredDeliverySession = {
@@ -70,4 +71,14 @@ export async function getSelectedAddressId(): Promise<string | null> {
 export async function setSelectedAddressId(id: string | null): Promise<void> {
   if (id) await AsyncStorage.setItem(KEYS.SELECTED_ADDRESS_ID, id);
   else await AsyncStorage.removeItem(KEYS.SELECTED_ADDRESS_ID);
+}
+
+/** True only for current session after explicit rider login — cleared on cold app start. */
+export async function getRiderModeActive(): Promise<boolean> {
+  return (await AsyncStorage.getItem(KEYS.RIDER_MODE)) === '1';
+}
+
+export async function setRiderModeActive(active: boolean): Promise<void> {
+  if (active) await AsyncStorage.setItem(KEYS.RIDER_MODE, '1');
+  else await AsyncStorage.removeItem(KEYS.RIDER_MODE);
 }

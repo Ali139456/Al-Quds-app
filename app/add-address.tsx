@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import {
   StyleSheet,
   TextInput,
@@ -10,6 +10,7 @@ import {
   Platform,
   Linking,
 } from 'react-native';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Text } from '@/components/Themed';
 import { reverseGeocode } from '@/services/googleGeocoding';
 import * as LinkingExpo from 'expo-linking';
@@ -31,7 +32,6 @@ import {
   type RawalpindiArea,
 } from '@/constants/rawalpindiAreas';
 import AreaDropdown from '@/components/AreaDropdown';
-import AddressMapView from '@/components/AddressMapView';
 import { useDelivery } from '@/contexts/DeliveryContext';
 
 function coordsFromArea(areaName: string, selectedArea: RawalpindiArea | null) {
@@ -56,7 +56,6 @@ export default function AddAddressScreen() {
   const [lng, setLng] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [locating, setLocating] = useState(false);
-  const mapRef = useRef<{ animateToRegion: (region: unknown) => void } | null>(null);
 
   const addressLine =
     [areaName.trim(), houseStreet.trim()].filter(Boolean).join(', ') ||
@@ -78,14 +77,6 @@ export default function AddAddressScreen() {
     }
     setLat(coords.lat);
     setLng(coords.lng);
-    if (mapRef.current && Platform.OS !== 'web') {
-      mapRef.current.animateToRegion({
-        latitude: coords.lat,
-        longitude: coords.lng,
-        latitudeDelta: 0.012,
-        longitudeDelta: 0.012,
-      });
-    }
     const geocoded = await reverseGeocode(coords.lat, coords.lng);
     if (geocoded) {
       if (!houseStreet.trim()) setHouseStreet(geocoded.addressLine);
@@ -102,14 +93,6 @@ export default function AddAddressScreen() {
     if (area.latitude != null && area.longitude != null) {
       setLat(area.latitude);
       setLng(area.longitude);
-      if (mapRef.current && Platform.OS !== 'web') {
-        mapRef.current.animateToRegion({
-          latitude: area.latitude,
-          longitude: area.longitude,
-          latitudeDelta: 0.02,
-          longitudeDelta: 0.02,
-        });
-      }
     }
   };
 
@@ -183,63 +166,50 @@ export default function AddAddressScreen() {
       showsVerticalScrollIndicator={false}
     >
       <Text style={[styles.hint, { color: colors.muted }]}>
-        {DELIVERY_ZONE_INFO} Select your area and confirm
-        location on the map.
+        {DELIVERY_ZONE_INFO} Select your area below — map not required.
       </Text>
-
-      {Platform.OS !== 'web' ? (
-        <View style={styles.mapWrap}>
-          <AddressMapView
-            mapRef={mapRef}
-            lat={lat}
-            lng={lng}
-            onPress={(latitude, longitude) => {
-              if (isInRawalpindi(latitude, longitude)) {
-                setLat(latitude);
-                setLng(longitude);
-              }
-            }}
-          />
-          <View style={[styles.mapOverlay, { backgroundColor: colors.background }]}>
-            <Pressable
-              style={[
-                styles.locationButton,
-                { backgroundColor: colors.card, borderColor: colors.border },
-              ]}
-              onPress={handleUseCurrentLocation}
-              disabled={locating}
-            >
-              {locating ? (
-                <ActivityIndicator color={colors.accent} size="small" />
-              ) : (
-                <Text style={[styles.locationButtonText, { color: colors.muted }]}>
-                  📍 Pin where I am now (GPS)
-                </Text>
-              )}
-            </Pressable>
-          </View>
-        </View>
-      ) : (
-        <Pressable
-          style={[styles.webMapPlaceholder, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={handleOpenMaps}
-        >
-          <Text style={[styles.webMapText, { color: colors.muted }]}>
-            {Platform.OS === 'web'
-              ? 'View delivery area on Google Maps (Rawalpindi, Pakistan)'
-              : 'Loading map…'}
-          </Text>
-          <Text style={[styles.webMapLink, { color: colors.accent }]}>
-            Open Google Maps →
-          </Text>
-        </Pressable>
-      )}
 
       <Text style={[styles.sectionLabel, { color: colors.text }]}>
         Select area (Rawalpindi)
       </Text>
       <AreaDropdown value={selectedArea} onChange={handleSelectArea} />
 
+      <View style={[styles.locationCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <FontAwesome name="map-marker" size={22} color={colors.accent} />
+        <View style={styles.locationCardText}>
+          <Text style={[styles.locationCardTitle, { color: colors.text }]}>
+            {selectedArea?.name || areaName.trim() || 'Choose an area'}
+          </Text>
+          <Text style={[styles.locationCardSub, { color: colors.muted }]}>
+            {lat != null && lng != null
+              ? checkRawalpindi(lat, lng)
+                ? '✓ Location set in Rawalpindi'
+                : '✗ Outside delivery area'
+              : 'Pick an area from the list above'}
+          </Text>
+        </View>
+      </View>
+
+      <Pressable
+        style={[styles.locationButton, { backgroundColor: colors.accentMuted, borderColor: colors.border }]}
+        onPress={handleUseCurrentLocation}
+        disabled={locating}
+      >
+        {locating ? (
+          <ActivityIndicator color={colors.accent} size="small" />
+        ) : (
+          <>
+            <FontAwesome name="location-arrow" size={14} color={colors.accent} />
+            <Text style={[styles.locationButtonText, { color: colors.accent }]}>
+              Use my current location (GPS)
+            </Text>
+          </>
+        )}
+      </Pressable>
+
+      <Text style={[styles.sectionLabel, { color: colors.text }]}>
+        Address details
+      </Text>
       <Text style={[styles.fieldLabel, { color: colors.text }]}>
         Label (e.g. Home, Office)
       </Text>
@@ -382,7 +352,7 @@ export default function AddAddressScreen() {
       )}
       {lat === null && lng === null && selectedArea && (
         <Text style={[styles.coords, { color: colors.muted }]}>
-          Area selected — tap Save or pin on map to confirm
+          Area selected — tap Save address
         </Text>
       )}
 
@@ -403,26 +373,18 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 40 },
   hint: { fontSize: 13, marginBottom: 16 },
-  mapWrap: { height: 220, borderRadius: 16, overflow: 'hidden', marginBottom: 20 },
-  map: { width: '100%', height: '100%' },
-  mapOverlay: {
-    position: 'absolute',
-    bottom: 12,
-    left: 12,
-    right: 12,
-    borderRadius: 12,
-    padding: 10,
+  locationCard: {
+    flexDirection: 'row',
     alignItems: 'center',
-  },
-  webMapPlaceholder: {
-    padding: 24,
+    gap: 12,
+    padding: 14,
     borderRadius: 16,
     borderWidth: 1,
-    marginBottom: 20,
-    alignItems: 'center',
+    marginBottom: 12,
   },
-  webMapText: { fontSize: 14, marginBottom: 8 },
-  webMapLink: { fontSize: 15, fontWeight: '700' },
+  locationCardText: { flex: 1, minWidth: 0 },
+  locationCardTitle: { fontSize: 15, fontWeight: '700', marginBottom: 4 },
+  locationCardSub: { fontSize: 12, lineHeight: 16 },
   sectionLabel: { fontSize: 14, fontWeight: '700', marginBottom: 8 },
   fieldLabel: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
   input: {
@@ -435,11 +397,14 @@ const styles = StyleSheet.create({
   },
   inputMulti: { height: 80, paddingTop: 12 },
   locationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1,
-    alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 16,
   },
   locationButtonText: { fontWeight: '600' },
   coords: { fontSize: 12, marginTop: 12, marginBottom: 16 },

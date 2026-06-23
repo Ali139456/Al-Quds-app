@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Logo from '@/components/Logo';
 import { toast } from '@/contexts/ToastContext';
 import { DEMO_ACCOUNTS } from '@/constants/demoAccounts';
+import { setRiderModeActive } from '@/utils/storage';
 
 type LoginMode = 'email' | 'phone';
 
@@ -24,8 +25,14 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [sendingOtp, setSendingOtp] = useState(false);
 
-  const finishLogin = (role?: string) => {
-    router.replace(role === 'rider' ? '/(rider)' : '/(tabs)/');
+  const finishLogin = async (role?: string) => {
+    if (role === 'rider') {
+      await setRiderModeActive(true);
+      router.replace('/(rider)');
+    } else {
+      await setRiderModeActive(false);
+      router.replace('/(tabs)/');
+    }
   };
 
   const handleEmailLogin = async () => {
@@ -33,7 +40,7 @@ export default function LoginScreen() {
     const result = await login(email, password);
     setLoading(false);
     if (result.ok) {
-      finishLogin(result.role);
+      await finishLogin(result.role);
     } else {
       toast.error(result.error ?? 'Login failed', 'Login failed');
     }
@@ -60,7 +67,7 @@ export default function LoginScreen() {
     const result = await loginWithPhone(phone, otp);
     setLoading(false);
     if (result.ok) {
-      finishLogin(result.role);
+      await finishLogin(result.role);
     } else {
       toast.error(result.error ?? 'Login failed', 'Login failed');
     }

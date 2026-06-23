@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -16,7 +16,6 @@ import { useDelivery } from '@/contexts/DeliveryContext';
 import { RAWALPINDI_CENTER, RAWALPINDI_AREAS } from '@/constants/rawalpindiAreas';
 import { DELIVERY_ZONE_INFO } from '@/constants/location';
 import DeliveryZoneBanner from '@/components/DeliveryZoneBanner';
-import AddressMapView from '@/components/AddressMapView';
 import { Radius, Spacing } from '@/constants/Spacing';
 
 const MAP_HEIGHT = 220;
@@ -51,12 +50,10 @@ export default function DeliveryLocationPicker() {
     searchingLocation,
     handleUseCurrentLocation,
     handleSearchLocation,
-    handleMapPress,
     setGuestAddressLine,
   } = useDelivery();
 
   const [searchText, setSearchText] = useState(guestAddressLine);
-  const mapRef = useRef<{ animateToRegion: (region: unknown) => void } | null>(null);
 
   useEffect(() => {
     setSearchText(guestAddressLine);
@@ -116,20 +113,7 @@ export default function DeliveryLocationPicker() {
         ))}
       </ScrollView>
 
-      {Platform.OS !== 'web' ? (
-        <View style={[styles.mapWrap, { borderColor: colors.border }]}>
-          <AddressMapView
-            mapRef={mapRef}
-            lat={guestLat}
-            lng={guestLng}
-            height={MAP_HEIGHT}
-            markerTitle="Delivery"
-            onPress={(latitude, longitude) => {
-              void handleMapPress(latitude, longitude);
-            }}
-          />
-        </View>
-      ) : Platform.OS === 'web' ? (
+      {Platform.OS === 'web' ? (
         <View style={[styles.mapWrap, { borderColor: colors.border }]}>
           {/* @ts-expect-error web iframe */}
           <iframe
@@ -148,9 +132,16 @@ export default function DeliveryLocationPicker() {
           />
         </View>
       ) : (
-        <View style={[styles.mapPlaceholder, { backgroundColor: colors.background, borderColor: colors.border }]}>
-          <FontAwesome name="map" size={32} color={colors.muted} />
-          <Text style={[styles.placeholderText, { color: colors.muted }]}>Loading map…</Text>
+        <View style={[styles.previewCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+          <FontAwesome name="map-marker" size={24} color={colors.accent} />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={[styles.previewTitle, { color: colors.text }]} numberOfLines={1}>
+              {guestAddressLine.trim() || 'Search or pick an area above'}
+            </Text>
+            <Text style={[styles.previewSub, { color: colors.muted }]}>
+              {hasPin ? '✓ Delivery point set in Rawalpindi' : 'Tap a quick area chip or search'}
+            </Text>
+          </View>
         </View>
       )}
 
@@ -181,7 +172,7 @@ export default function DeliveryLocationPicker() {
         </View>
       ) : (
         <Text style={[styles.waitingText, { color: colors.muted }]}>
-          Search an area or tap the map to set a delivery point
+          Search an area or pick a quick chip to set delivery point
         </Text>
       )}
     </View>
@@ -234,16 +225,17 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
   },
-  map: { width: '100%', height: '100%' },
-  mapPlaceholder: {
-    height: MAP_HEIGHT,
+  previewCard: {
+    minHeight: 88,
     borderRadius: Radius.lg,
     borderWidth: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
+    gap: Spacing.md,
+    padding: Spacing.md,
   },
-  placeholderText: { fontSize: 13, textAlign: 'center', paddingHorizontal: Spacing.lg },
+  previewTitle: { fontSize: 14, fontWeight: '700', marginBottom: 4 },
+  previewSub: { fontSize: 12, lineHeight: 16 },
   locationBtn: {
     flexDirection: 'row',
     alignItems: 'center',

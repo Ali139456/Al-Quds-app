@@ -142,10 +142,12 @@ export default function AddressPickerSheet() {
   ).current;
 
   const openAddAddress = () => {
-    setShowSetupModal(false);
     setShowMapPicker(false);
-    if (user) router.push('/add-address');
-    else router.push('/auth/login');
+    setShowSetupModal(false);
+    setTimeout(() => {
+      if (user) router.push('/add-address');
+      else router.push('/auth/login');
+    }, 280);
   };
 
   const handleSelectAddress = (addr: SavedAddress) => {
