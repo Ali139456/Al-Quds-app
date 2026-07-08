@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { AppState } from 'react-native';
 import type { PastOrder, PastOrderItem } from '@/types';
 import type { CartItem } from '@/types';
 import type { SavedAddress } from '@/types';
@@ -102,13 +103,19 @@ export function OrderHistoryProvider({ children }: { children: React.ReactNode }
     const statusesNow: Record<string, string> = {};
     merged.forEach((o) => (statusesNow[o.id] = o.status));
     const prev = previousStatusByOrderId.current;
-    const deliveredIds = merged.filter((o) => o.status === 'delivered' && prev[o.id] && prev[o.id] !== 'delivered').map((o) => o.id);
+    const statusUpdates = merged.filter((o) => prev[o.id] && prev[o.id] !== o.status);
     previousStatusByOrderId.current = statusesNow;
     setOrders(merged);
     await setStoredOrders(merged);
-    if (deliveredIds.length > 0) {
-      const msg = deliveredIds.length === 1 ? 'Your order has been delivered!' : `${deliveredIds.length} of your orders have been delivered!`;
-      toast.success(msg, 'Order delivered');
+    if (statusUpdates.length > 0 && Object.keys(prev).length > 0) {
+      const delivered = statusUpdates.filter((o) => o.status === 'delivered');
+      if (delivered.length > 0) {
+        const msg = delivered.length === 1 ? 'Your order has been delivered!' : `${delivered.length} of your orders have been delivered!`;
+        toast.success(msg, 'Order delivered');
+      } else {
+        const latest = statusUpdates[0];
+        toast.info(`Order ${latest.id.replace('order_', '#')} is now ${latest.status.replace(/_/g, ' ')}`, 'Order update');
+      }
     }
   }, [fetchOrdersFromApi, mergeOrders]);
 
@@ -125,6 +132,22 @@ export function OrderHistoryProvider({ children }: { children: React.ReactNode }
     });
     return () => { cancelled = true; };
   }, [user?.id, fetchOrdersFromApi, mergeOrders]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const poll = () => {
+      if (AppState.currentState === 'active') refreshOrderHistory();
+    };
+    poll();
+    const timer = setInterval(poll, 5000);
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') poll();
+    });
+    return () => {
+      clearInterval(timer);
+      sub.remove();
+    };
+  }, [user?.id, refreshOrderHistory]);
 
   const rollbackLocalOrder = useCallback(async (orderId: string) => {
     setOrders((prev) => prev.filter((o) => o.id !== orderId));

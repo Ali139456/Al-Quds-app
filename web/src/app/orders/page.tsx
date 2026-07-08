@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/providers/AuthProvider';
 import { apiFetch } from '@/lib/api';
+import { useInterval } from '@/hooks/useInterval';
 import type { PastOrder, OrderStatus } from '@/lib/types';
 import { formatPKR } from '@/lib/utils';
 
@@ -34,26 +35,33 @@ export default function OrdersPage() {
   const { user } = useAuth();
   const [orders, setOrders] = useState<PastOrder[]>([]);
 
-  useEffect(() => {
+  const loadOrders = useCallback(async () => {
     const local: PastOrder[] = JSON.parse(localStorage.getItem('alquds_web_orders') || '[]');
     if (!user?.id) {
       setOrders(local);
       return;
     }
-    apiFetch<Record<string, unknown>[]>(`/api/orders?userId=${encodeURIComponent(user.id)}`)
-      .then((rows) => {
-        const fromApi = rows.map(mapApiOrder);
-        const byId = new Map<string, PastOrder>();
-        for (const o of local) byId.set(o.id, o);
-        for (const o of fromApi) byId.set(o.id, o);
-        setOrders(
-          Array.from(byId.values()).sort(
-            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          )
-        );
-      })
-      .catch(() => setOrders(local));
+    try {
+      const rows = await apiFetch<Record<string, unknown>[]>(`/api/orders?userId=${encodeURIComponent(user.id)}`);
+      const fromApi = rows.map(mapApiOrder);
+      const byId = new Map<string, PastOrder>();
+      for (const o of local) byId.set(o.id, o);
+      for (const o of fromApi) byId.set(o.id, o);
+      setOrders(
+        Array.from(byId.values()).sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
+      );
+    } catch {
+      setOrders(local);
+    }
   }, [user?.id]);
+
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
+
+  useInterval(loadOrders, 5000, !!user?.id);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">

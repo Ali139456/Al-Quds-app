@@ -120,7 +120,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     if (!user?.id) return;
-    const pollMs = () => (AppState.currentState === 'active' ? 30000 : 12000);
+    const pollMs = () => (AppState.currentState === 'active' ? 10000 : 20000);
     let timer: ReturnType<typeof setInterval>;
 
     const start = () => {

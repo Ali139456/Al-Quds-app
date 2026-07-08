@@ -4427,9 +4427,11 @@
         document.getElementById('adminPage').classList.remove('hidden');
         loadStats();
         loadStoreStatus();
+        startAdminGlobalSync();
         showTab(getTabFromUrl());
       } else {
         stopOrdersAutoRefresh();
+        stopAdminGlobalSync();
         document.getElementById('loginPage').classList.remove('hidden');
         document.getElementById('adminPage').classList.add('hidden');
       }
@@ -4468,12 +4470,14 @@
       showPage();
     }
 
-    const ORDERS_POLL_MS = 8000;
+    const ORDERS_POLL_MS = 5000;
+    const ADMIN_GLOBAL_POLL_MS = 12000;
     let ordersPollTimer = null;
+    let adminGlobalTimer = null;
     let currentAdminTab = 'orders';
     let ordersRefreshInFlight = false;
-    let newOrderToastTimer = null;
     let ordersAutoRefreshReady = false;
+    let ordersPollTickCount = 0;
 
     function isOrdersTabActive() {
       return !!token && currentAdminTab === 'orders' && !document.getElementById('adminPage').classList.contains('hidden');
@@ -4493,6 +4497,7 @@
     function startOrdersAutoRefresh() {
       stopOrdersAutoRefresh();
       if (!isOrdersTabActive()) return;
+      tickOrdersAutoRefresh();
       ordersPollTimer = setInterval(tickOrdersAutoRefresh, ORDERS_POLL_MS);
     }
 
@@ -4503,34 +4508,50 @@
       }
     }
 
+    function startAdminGlobalSync() {
+      stopAdminGlobalSync();
+      if (!token) return;
+      tickAdminGlobalSync();
+      adminGlobalTimer = setInterval(tickAdminGlobalSync, ADMIN_GLOBAL_POLL_MS);
+    }
+
+    function stopAdminGlobalSync() {
+      if (adminGlobalTimer) {
+        clearInterval(adminGlobalTimer);
+        adminGlobalTimer = null;
+      }
+    }
+
+    async function tickAdminGlobalSync() {
+      if (!token || document.hidden) return;
+      loadStats();
+      loadLowStockAlerts();
+      loadStoreStatus();
+    }
+
     function showNewOrderToast(count) {
-      const toast = document.getElementById('newOrderToast');
-      if (!toast) return;
-      toast.textContent = count > 1 ? count + ' new orders received' : 'New order received';
-      toast.classList.remove('hidden');
-      if (newOrderToastTimer) clearTimeout(newOrderToastTimer);
-      newOrderToastTimer = setTimeout(function() {
-        toast.classList.add('hidden');
-      }, 4000);
+      uiToast(count > 1 ? count + ' new orders received' : 'New order received', 'success', 5000);
     }
 
     function ordersSnapshotKey(orders) {
       return orders.map(function(o) {
-        return o.id + ':' + (o.status || '') + ':' + (o.total || 0) + ':' + (o.created_at || '');
+        return o.id + ':' + (o.status || '') + ':' + (o.rider_id || '') + ':' + (o.total || 0) + ':' + (o.created_at || '');
       }).join('|');
     }
 
     async function tickOrdersAutoRefresh() {
       if (shouldPauseOrdersRefresh() || ordersRefreshInFlight) return;
       ordersRefreshInFlight = true;
+      ordersPollTickCount += 1;
       try {
         const prevIds = new Set(cachedOrders.map(function(o) { return o.id; }));
         const prevKey = ordersSnapshotKey(cachedOrders);
-        const r = await fetch(API + '/api/admin/orders');
+        const r = await fetch(API + '/api/admin/orders', { cache: 'no-store' });
         if (!r.ok) return;
         const orders = normalizeOrders(await r.json());
         const nextKey = ordersSnapshotKey(orders);
-        if (nextKey === prevKey) return;
+        const forceRefresh = ordersPollTickCount % 6 === 0;
+        if (nextKey === prevKey && !forceRefresh) return;
 
         const newOrders = orders.filter(function(o) { return !prevIds.has(o.id); });
         if (ordersAutoRefreshReady && newOrders.length > 0) {
@@ -4603,8 +4624,13 @@
     }
 
     document.addEventListener('visibilitychange', function() {
-      if (document.hidden) stopOrdersAutoRefresh();
-      else if (isOrdersTabActive()) startOrdersAutoRefresh();
+      if (document.hidden) {
+        stopOrdersAutoRefresh();
+        stopAdminGlobalSync();
+      } else {
+        startAdminGlobalSync();
+        if (isOrdersTabActive()) startOrdersAutoRefresh();
+      }
     });
 
     window.addEventListener('hashchange', function() {
@@ -5708,7 +5734,7 @@
       const el = document.getElementById('ordersList');
       const pagEl = document.getElementById('ordersPagination');
       try {
-        const r = await fetch(API + '/api/admin/orders');
+        const r = await fetch(API + '/api/admin/orders', { cache: 'no-store' });
         if (!r.ok) throw new Error(r.status);
         const orders = normalizeOrders(await r.json());
         if (orders.length === 0) {

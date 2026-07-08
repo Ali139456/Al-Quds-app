@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
+import { useInterval } from '@/hooks/useInterval';
 import { buildOsmEmbedUrl } from '@/lib/geo';
 import { formatPKR } from '@/lib/utils';
 
@@ -15,14 +16,20 @@ export default function OrderDetailClient() {
   const placed = searchParams.get('placed') === '1';
   const [order, setOrder] = useState<Record<string, unknown> | null>(null);
 
-  useEffect(() => {
-    apiFetch<Record<string, unknown>>(`/api/orders/${id}`)
-      .then(setOrder)
-      .catch(() => {
-        const local = JSON.parse(localStorage.getItem('alquds_web_orders') || '[]');
-        setOrder(local.find((o: { id: string }) => o.id === id) || null);
-      });
+  const loadOrder = useCallback(async () => {
+    try {
+      setOrder(await apiFetch<Record<string, unknown>>(`/api/orders/${id}`));
+    } catch {
+      const local = JSON.parse(localStorage.getItem('alquds_web_orders') || '[]');
+      setOrder(local.find((o: { id: string }) => o.id === id) || null);
+    }
   }, [id]);
+
+  useEffect(() => {
+    loadOrder();
+  }, [loadOrder]);
+
+  useInterval(loadOrder, 4000, !!id);
 
   if (!order) {
     return <div className="mx-auto max-w-2xl p-8 text-muted">Loading order...</div>;
