@@ -32,7 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className={`${jakarta.variable} antialiased`}>
+      <body className={`${jakarta.variable} antialiased`} suppressHydrationWarning>
         <AppProviders>
           <StoreClosedBanner />
           <SiteHeader />

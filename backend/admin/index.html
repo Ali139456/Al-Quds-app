@@ -383,22 +383,6 @@
       font-size: 0.85rem;
     }
 
-    .sync-hint {
-      background: rgba(34, 197, 94, 0.08);
-      border: 1px solid rgba(34, 197, 94, 0.18);
-      color: #86efac;
-      font-size: 0.78rem;
-      padding: 10px 14px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      line-height: 1.5;
-    }
-    .sync-hint code {
-      background: rgba(0, 0, 0, 0.25);
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 0.85em;
-    }
 
     .live-badge {
       display: inline-flex;
@@ -523,6 +507,42 @@
     }
     .order-card {
       cursor: pointer;
+    }
+    .order-card.is-new-order {
+      border-color: rgba(209, 171, 102, 0.55);
+      background: linear-gradient(145deg, rgba(209, 171, 102, 0.1) 0%, var(--surface) 52%);
+      box-shadow: 0 0 0 1px rgba(209, 171, 102, 0.22), 0 8px 28px rgba(209, 171, 102, 0.14);
+      animation: newOrderGlow 2.8s ease-in-out infinite;
+    }
+    .order-card.is-new-order .order-card-header {
+      background: linear-gradient(135deg, rgba(209, 171, 102, 0.16) 0%, var(--surface-elevated) 100%);
+    }
+    .order-card.is-new-order:hover {
+      border-color: rgba(209, 171, 102, 0.78);
+      box-shadow: 0 0 0 1px rgba(209, 171, 102, 0.38), 0 12px 34px rgba(209, 171, 102, 0.2);
+    }
+    .order-new-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #f59e0b 0%, #eab308 100%);
+      color: #0a0a0a;
+      margin-right: 8px;
+      vertical-align: middle;
+      box-shadow: 0 2px 10px rgba(245, 158, 11, 0.35);
+    }
+    @keyframes newOrderGlow {
+      0%, 100% {
+        box-shadow: 0 0 0 1px rgba(209, 171, 102, 0.22), 0 8px 28px rgba(209, 171, 102, 0.1);
+      }
+      50% {
+        box-shadow: 0 0 0 1px rgba(209, 171, 102, 0.48), 0 8px 32px rgba(209, 171, 102, 0.24);
+      }
     }
     .order-card:hover,
     .user-card:hover {
@@ -1665,7 +1685,13 @@
       font-weight: 600;
       text-transform: lowercase;
     }
-    .badge.placed { background: var(--surface-hover); color: var(--text-muted); }
+    .badge.placed { background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.32); }
+    .order-card.is-new-order .badge.placed {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.3) 0%, rgba(234, 179, 8, 0.24) 100%);
+      color: #fcd34d;
+      border-color: rgba(245, 158, 11, 0.45);
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.22);
+    }
     .badge.confirmed { background: var(--accent-muted); color: var(--accent); }
     .badge.preparing { background: rgba(59, 130, 246, 0.15); color: #93c5fd; }
     .badge.out_for_delivery { background: rgba(168, 85, 247, 0.15); color: #c4b5fd; }
@@ -2302,6 +2328,129 @@
       .modal-form-grid { grid-template-columns: 1fr; }
       .modal-form-grid .span-2 { grid-column: span 1; }
       .modal-box.modal-lg { max-width: 100%; }
+    }
+
+    .modal-box.modal-sm { max-width: 420px; }
+    .ui-dialog-message {
+      margin: 0;
+      font-size: 0.95rem;
+      line-height: 1.55;
+      color: var(--text);
+    }
+    .modal-footer .btn-danger {
+      padding: 12px 26px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.88rem;
+      font-family: inherit;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(239, 68, 68, 0.28);
+      transition: transform 0.15s, box-shadow 0.2s, filter 0.2s;
+    }
+    .modal-footer .btn-danger:hover {
+      filter: brightness(1.05);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 22px rgba(239, 68, 68, 0.36);
+    }
+
+    /* Toast notifications */
+    .ui-toast-stack {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 3000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+      max-width: min(420px, calc(100vw - 32px));
+    }
+    .ui-toast {
+      pointer-events: auto;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 16px 14px 18px;
+      border-radius: 14px;
+      border: 1px solid var(--border-focus);
+      background: linear-gradient(135deg, var(--surface-elevated) 0%, var(--surface) 100%);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.42);
+      animation: uiToastIn 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+    .ui-toast.is-leaving {
+      animation: uiToastOut 0.25s ease forwards;
+    }
+    .ui-toast-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.82rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .ui-toast-body {
+      flex: 1;
+      color: var(--text);
+      padding-top: 4px;
+    }
+    .ui-toast-close {
+      width: 28px;
+      height: 28px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1.2rem;
+      line-height: 1;
+      flex-shrink: 0;
+      transition: background 0.2s, color 0.2s;
+    }
+    .ui-toast-close:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+    }
+    .ui-toast.success {
+      border-color: rgba(34, 197, 94, 0.35);
+    }
+    .ui-toast.success .ui-toast-icon {
+      background: var(--success-bg);
+      color: var(--success);
+    }
+    .ui-toast.error {
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+    .ui-toast.error .ui-toast-icon {
+      background: var(--danger-bg);
+      color: var(--danger);
+    }
+    .ui-toast.info .ui-toast-icon,
+    .ui-toast.warning .ui-toast-icon {
+      background: var(--accent-muted);
+      color: var(--accent);
+    }
+    @keyframes uiToastIn {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes uiToastOut {
+      to { opacity: 0; transform: translateX(20px); }
+    }
+    @media (max-width: 560px) {
+      .ui-toast-stack {
+        left: 16px;
+        right: 16px;
+        bottom: 16px;
+        max-width: none;
+      }
     }
 
     .pagination {
@@ -3394,10 +3543,6 @@
       </div>
     </aside>
     <main class="admin-main">
-      <div class="sync-hint">
-        <strong>App sync:</strong> Mobile APK uses production API <code>https://al-quds-app-production.up.railway.app</code>. Rebuild the APK after updates (<code>npx eas build -p android --profile preview</code>). For local dev only, set <code>EXPO_PUBLIC_API_URL</code> to your machine IP.
-      </div>
-
       <div id="dashboardHeader" class="dashboard-header">
         <div class="store-toggle-bar is-open" id="storeToggleBar">
           <div class="store-toggle-info">
@@ -4167,6 +4312,59 @@
     </div>
   </div>
 
+  <div id="uiDialogModal" class="modal-overlay" role="alertdialog" aria-modal="true" aria-labelledby="uiDialogTitle" aria-describedby="uiDialogMessage">
+    <div class="modal-box modal-sm">
+      <div class="modal-header">
+        <div class="modal-header-text">
+          <h3 id="uiDialogTitle">Confirm</h3>
+        </div>
+        <button type="button" class="modal-close" id="uiDialogClose" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="uiDialogMessage" class="ui-dialog-message"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="uiDialogCancel">Cancel</button>
+        <button type="button" class="btn-primary" id="uiDialogConfirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="invEditModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="invEditModalTitle">
+    <div class="modal-box modal-md">
+      <div class="modal-header">
+        <div class="modal-header-text">
+          <h3 id="invEditModalTitle">Edit <span>stock item</span></h3>
+          <p class="modal-subtitle">Update name, quantity, and low-stock alert threshold.</p>
+        </div>
+        <button type="button" class="modal-close" onclick="closeInvEditModal()" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-form-grid">
+          <div class="field span-2">
+            <label for="invEditName">Item name</label>
+            <input type="text" id="invEditName" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="invEditQty">Current quantity</label>
+            <input type="number" id="invEditQty" step="any" min="0" />
+          </div>
+          <div class="field">
+            <label for="invEditLow">Low stock alert</label>
+            <input type="number" id="invEditLow" step="any" min="0" />
+          </div>
+          <p id="invEditUnitHint" class="modal-subtitle span-2" style="margin:0;"></p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeInvEditModal()">Cancel</button>
+        <button type="button" class="btn-primary" onclick="saveInvEditModal()">Save changes</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="uiToastStack" class="ui-toast-stack" aria-live="polite" aria-atomic="true"></div>
+
   <script>
     // Always use the same host that serves this admin page (local or Railway production).
     const API = window.location.origin;
@@ -4480,6 +4678,144 @@
       return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    const UI_TOAST_ICONS = { success: '✓', error: '✕', info: 'ℹ', warning: '!' };
+    let uiDialogResolve = null;
+    let invEditItemId = null;
+
+    function inferToastType(msg) {
+      const s = String(msg).toLowerCase();
+      if (/failed|could not|error|required|invalid|upload failed|replace failed|please select/.test(s)) return 'error';
+      if (/saved|added|created|sent|scheduled|restored|updated|success|recipe saved|settings saved/.test(s)) return 'success';
+      return 'info';
+    }
+
+    function uiToast(message, type, duration) {
+      const stack = document.getElementById('uiToastStack');
+      if (!stack) return;
+      type = type || inferToastType(message);
+      duration = duration == null ? (type === 'error' ? 5500 : 4200) : duration;
+      const el = document.createElement('div');
+      el.className = 'ui-toast ' + type;
+      el.innerHTML =
+        '<span class="ui-toast-icon" aria-hidden="true">' + (UI_TOAST_ICONS[type] || UI_TOAST_ICONS.info) + '</span>' +
+        '<span class="ui-toast-body">' + esc(String(message)) + '</span>' +
+        '<button type="button" class="ui-toast-close" aria-label="Dismiss">&times;</button>';
+      const close = function() {
+        el.classList.add('is-leaving');
+        setTimeout(function() { if (el.parentNode) el.remove(); }, 250);
+      };
+      el.querySelector('.ui-toast-close').onclick = close;
+      stack.appendChild(el);
+      if (duration > 0) setTimeout(close, duration);
+    }
+
+    function closeUiDialog(result) {
+      const modal = document.getElementById('uiDialogModal');
+      if (!modal) return;
+      modal.classList.remove('is-open');
+      if (!document.querySelector('.modal-overlay.is-open')) document.body.style.overflow = '';
+      if (uiDialogResolve) {
+        const resolve = uiDialogResolve;
+        uiDialogResolve = null;
+        resolve(result);
+      }
+    }
+
+    function uiConfirm(message, opts) {
+      opts = opts || {};
+      const modal = document.getElementById('uiDialogModal');
+      const titleEl = document.getElementById('uiDialogTitle');
+      const messageEl = document.getElementById('uiDialogMessage');
+      const cancelBtn = document.getElementById('uiDialogCancel');
+      const confirmBtn = document.getElementById('uiDialogConfirm');
+      if (!modal || !titleEl || !messageEl || !cancelBtn || !confirmBtn) return Promise.resolve(false);
+      return new Promise(function(resolve) {
+        uiDialogResolve = resolve;
+        titleEl.textContent = opts.title || 'Confirm action';
+        messageEl.textContent = message;
+        cancelBtn.style.display = opts.hideCancel ? 'none' : '';
+        confirmBtn.textContent = opts.confirmLabel || 'Confirm';
+        confirmBtn.className = opts.danger ? 'btn-danger' : 'btn-primary';
+        modal.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+        setTimeout(function() { confirmBtn.focus(); }, 80);
+      });
+    }
+
+    (function initUiFeedback() {
+      const modal = document.getElementById('uiDialogModal');
+      const cancelBtn = document.getElementById('uiDialogCancel');
+      const confirmBtn = document.getElementById('uiDialogConfirm');
+      const closeBtn = document.getElementById('uiDialogClose');
+      if (!modal || !cancelBtn || !confirmBtn) return;
+      cancelBtn.onclick = function() { closeUiDialog(false); };
+      confirmBtn.onclick = function() { closeUiDialog(true); };
+      if (closeBtn) closeBtn.onclick = function() { closeUiDialog(false); };
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) closeUiDialog(false);
+      });
+      document.addEventListener('keydown', function(e) {
+        if (!modal.classList.contains('is-open')) return;
+        if (e.key === 'Escape') closeUiDialog(false);
+      });
+      window.alert = function(msg) { uiToast(String(msg), inferToastType(msg)); };
+    })();
+
+    function openInvEditModal(item) {
+      invEditItemId = item.id;
+      document.getElementById('invEditName').value = item.name;
+      document.getElementById('invEditQty').value = formatInvQty(item.quantity);
+      document.getElementById('invEditLow').value = formatInvQty(item.lowStock);
+      document.getElementById('invEditUnitHint').textContent = 'Unit: ' + item.unit;
+      document.getElementById('invEditModal').classList.add('is-open');
+      document.body.style.overflow = 'hidden';
+      setTimeout(function() { document.getElementById('invEditName').focus(); }, 80);
+    }
+
+    function closeInvEditModal() {
+      document.getElementById('invEditModal').classList.remove('is-open');
+      if (!document.querySelector('.modal-overlay.is-open')) document.body.style.overflow = '';
+      invEditItemId = null;
+    }
+
+    async function saveInvEditModal() {
+      if (!invEditItemId) return;
+      const newName = document.getElementById('invEditName').value.trim();
+      const newQty = document.getElementById('invEditQty').value;
+      const newLow = document.getElementById('invEditLow').value;
+      if (!newName) { uiToast('Name required', 'error'); return; }
+      try {
+        const r = await fetch(API + '/api/admin/inventory/' + encodeURIComponent(invEditItemId), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: newName,
+            quantity: Number(newQty),
+            lowStock: Number(newLow),
+          }),
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Failed');
+        closeInvEditModal();
+        loadInventoryTab();
+        uiToast('Stock item updated', 'success');
+      } catch (e) {
+        uiToast(e.message || 'Could not update', 'error');
+      }
+    }
+
+    (function initInvEditModal() {
+      const modal = document.getElementById('invEditModal');
+      if (!modal) return;
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) closeInvEditModal();
+      });
+      document.addEventListener('keydown', function(e) {
+        if (!modal.classList.contains('is-open')) return;
+        if (e.key === 'Escape') closeInvEditModal();
+      });
+    })();
+
     function menuImageSrc(image) {
       if (!image) return '';
       if (image.startsWith('data:') || image.startsWith('http://') || image.startsWith('https://')) return image;
@@ -4639,7 +4975,7 @@
     }
 
     async function deleteCategory(id, name) {
-      if (!confirm('Move category “' + name + '” to trash? You can restore it within 30 days from the Trash tab.')) return;
+      if (!(await uiConfirm('Move category “' + name + '” to trash? You can restore it within 30 days from the Trash tab.', { danger: true, title: 'Move to trash', confirmLabel: 'Move to trash' }))) return;
       try {
         const r = await fetch(API + '/api/admin/categories/' + encodeURIComponent(id), { method: 'DELETE' });
         const data = await r.json().catch(() => ({}));
@@ -4885,7 +5221,7 @@
     async function unassignRiderFromOrder() {
       const orderId = document.getElementById('assignRiderOrderId').value;
       if (!orderId) return;
-      if (!confirm('Remove rider from this order?')) return;
+      if (!(await uiConfirm('Remove rider from this order?', { danger: true, title: 'Remove rider', confirmLabel: 'Remove' }))) return;
       try {
         const r = await fetch(API + '/api/admin/orders/' + encodeURIComponent(orderId), {
           method: 'PATCH',
@@ -4999,7 +5335,7 @@
       closeAllOrderMenus();
       const o = cachedOrders.find(function(x) { return x.id === orderId; });
       const orderNo = o ? formatOrderNo(cachedOrderNoById[o.id] || 0) : orderId;
-      if (!confirm('Move order #' + orderNo + ' to trash? You can restore it within 30 days from the Trash tab.')) return;
+      if (!(await uiConfirm('Move order #' + orderNo + ' to trash? You can restore it within 30 days from the Trash tab.', { danger: true, title: 'Move to trash', confirmLabel: 'Move to trash' }))) return;
       try {
         const r = await fetch(API + '/api/admin/orders/' + encodeURIComponent(orderId), { method: 'DELETE' });
         if (!r.ok) {
@@ -5396,10 +5732,10 @@
         const pageOrders = sortedDesc.slice(start, start + ordersPageSize);
 
         el.innerHTML = '<div class="orders-grid">' + pageOrders.map((o) => `
-            <article class="order-card" onclick="openOrderDetail('${esc(o.id)}')">
+            <article class="order-card${o.status === 'placed' ? ' is-new-order' : ''}" onclick="openOrderDetail('${esc(o.id)}')">
               <div class="order-card-header">
                 <div>
-                  <div class="order-id">Order #${formatOrderNo(orderNoById[o.id])}</div>
+                  <div class="order-id">${o.status === 'placed' ? '<span class="order-new-pill">New</span>' : ''}Order #${formatOrderNo(orderNoById[o.id])}</div>
                   ${orderSourceBadge(o)}
                   <span class="order-date">${esc(o.created_at)}</span>
                 </div>
@@ -5554,7 +5890,7 @@
     }
 
     async function deleteRider(id, name) {
-      if (!confirm('Move rider "' + name + '" to trash? You can restore within 30 days from the Trash tab.')) return;
+      if (!(await uiConfirm('Move rider "' + name + '" to trash? You can restore within 30 days from the Trash tab.', { danger: true, title: 'Move to trash', confirmLabel: 'Move to trash' }))) return;
       try {
         const r = await fetch(API + '/api/admin/riders/' + encodeURIComponent(id), { method: 'DELETE' });
         const data = await r.json().catch(() => ({}));
@@ -5857,33 +6193,12 @@
     async function editInventoryItem(id) {
       const item = inventoryItemsCache.find(function(x) { return x.id === id; });
       if (!item) return;
-      const newName = prompt('Item name:', item.name);
-      if (newName === null) return;
-      const newQty = prompt('Current quantity (' + item.unit + '):', formatInvQty(item.quantity));
-      if (newQty === null) return;
-      const newLow = prompt('Low stock alert (' + item.unit + '):', formatInvQty(item.lowStock));
-      if (newLow === null) return;
-      try {
-        const r = await fetch(API + '/api/admin/inventory/' + encodeURIComponent(id), {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: newName.trim(),
-            quantity: Number(newQty),
-            lowStock: Number(newLow),
-          }),
-        });
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || 'Failed');
-        loadInventoryTab();
-      } catch (e) {
-        alert(e.message || 'Could not update');
-      }
+      openInvEditModal(item);
     }
 
     async function deleteInventoryItem(id) {
       const item = inventoryItemsCache.find(function(x) { return x.id === id; });
-      if (!confirm('Delete "' + (item && item.name || id) + '" from inventory? Recipes using it will be removed.')) return;
+      if (!(await uiConfirm('Delete "' + (item && item.name || id) + '" from inventory? Recipes using it will be removed.', { danger: true, title: 'Delete stock item', confirmLabel: 'Delete' }))) return;
       try {
         const r = await fetch(API + '/api/admin/inventory/' + encodeURIComponent(id), { method: 'DELETE' });
         const data = await r.json().catch(function() { return {}; });
@@ -6016,7 +6331,7 @@
 
     async function buildDealRecipeFromMenu() {
       if (!selectedRecipeTarget || selectedRecipeTarget.type !== 'deal') return;
-      if (!confirm('Merge recipes from all menu items in this deal? This replaces the current deal recipe.')) return;
+      if (!(await uiConfirm('Merge recipes from all menu items in this deal? This replaces the current deal recipe.', { title: 'Merge deal recipe', confirmLabel: 'Merge recipes' }))) return;
       try {
         const r = await fetch(API + '/api/admin/recipes/build-deal', {
           method: 'POST',
@@ -6219,7 +6534,7 @@
 
     async function deleteAddon(id, name) {
       if (!name) name = 'this add-on';
-      if (!confirm('Move add-on "' + name + '" to trash? Restore within 30 days from the Trash tab.')) return;
+      if (!(await uiConfirm('Move add-on "' + name + '" to trash? Restore within 30 days from the Trash tab.', { danger: true, title: 'Move to trash', confirmLabel: 'Move to trash' }))) return;
       try {
         await fetch(API + '/api/admin/addons/' + encodeURIComponent(id), { method: 'DELETE' });
         loadAddonsList();
@@ -6461,7 +6776,7 @@
     }
 
     async function deleteBanner(id) {
-      if (!confirm('Move this banner to trash? Restore within 30 days from the Trash tab.')) return;
+      if (!(await uiConfirm('Move this banner to trash? Restore within 30 days from the Trash tab.', { danger: true, title: 'Move to trash', confirmLabel: 'Move to trash' }))) return;
       try {
         await fetch(API + '/api/admin/banners/' + id, { method: 'DELETE' });
         loadBanners();
@@ -6640,7 +6955,7 @@
     }
 
     async function deleteDeal(id) {
-      if (!confirm('Move this deal to trash? Restore within 30 days from the Trash tab.')) return;
+      if (!(await uiConfirm('Move this deal to trash? Restore within 30 days from the Trash tab.', { danger: true, title: 'Move to trash', confirmLabel: 'Move to trash' }))) return;
       try {
         await fetch(API + '/api/admin/deals/' + encodeURIComponent(id), { method: 'DELETE' });
         loadDeals();
@@ -6680,7 +6995,7 @@
     }
 
     async function deleteMenuItem(id, name) {
-      if (!confirm('Move “' + name + '” to trash? Restore within 30 days from the Trash tab.')) return;
+      if (!(await uiConfirm('Move “' + name + '” to trash? Restore within 30 days from the Trash tab.', { danger: true, title: 'Move to trash', confirmLabel: 'Move to trash' }))) return;
       try {
         await fetch(API + '/api/admin/menu/' + encodeURIComponent(id), { method: 'DELETE' });
         loadMenu();
@@ -6832,7 +7147,7 @@
     }
 
     async function restoreTrashItem(trashId) {
-      if (!confirm('Restore this item?')) return;
+      if (!(await uiConfirm('Restore this item?', { title: 'Restore item', confirmLabel: 'Restore' }))) return;
       try {
         const r = await fetch(API + '/api/admin/trash/' + trashId + '/restore', { method: 'POST' });
         const data = await r.json().catch(function() { return {}; });
@@ -7202,7 +7517,7 @@
     }
 
     async function cancelNotificationCampaign(id) {
-      if (!confirm('Cancel this scheduled notification?')) return;
+      if (!(await uiConfirm('Cancel this scheduled notification?', { danger: true, title: 'Cancel notification', confirmLabel: 'Cancel campaign' }))) return;
       try {
         const r = await fetch(API + '/api/admin/notification-campaigns/' + encodeURIComponent(id), { method: 'DELETE' });
         const data = await r.json().catch(function() { return {}; });
