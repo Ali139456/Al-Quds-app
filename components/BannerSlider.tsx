@@ -8,7 +8,7 @@ import type { Banner } from '@/hooks/useBanners';
 import Colors from '@/constants/Colors';
 import { CategoryGradients } from '@/constants/Gradients';
 import { useColorScheme } from '@/components/useColorScheme';
-import { resolveFoodImageUri } from '@/utils/resolveFoodImage';
+import { resolveFoodImageUri, IMAGE_WIDTH } from '@/utils/resolveFoodImage';
 import { Radius, Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 
@@ -62,7 +62,7 @@ export default function BannerSlider({ banners }: BannerSliderProps) {
         contentContainerStyle={styles.scrollContent}
       >
         {banners.map((b) => {
-          const imageUri = resolveFoodImageUri(b.image);
+          const imageUri = resolveFoodImageUri(b.image, IMAGE_WIDTH.banner);
           return (
             <Pressable
               key={b.id}

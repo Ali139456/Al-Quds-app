@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { RemoteImage } from '@/components/RemoteImage';
 import { apiFetch } from '@/lib/api';
 import type { Deal } from '@/lib/types';
-import { formatPKR, resolveImageUrl } from '@/lib/utils';
+import { formatPKR, IMAGE_WIDTH, resolveImageUrl } from '@/lib/utils';
 import { useCart } from '@/providers/CartProvider';
 
 export default function DealDetailPage() {
@@ -35,7 +35,7 @@ export default function DealDetailPage() {
     <div className="mx-auto max-w-4xl px-4 py-8">
       <div className="card overflow-hidden">
         <div className="relative h-56 md:h-72">
-          <Image src={resolveImageUrl(deal.image)} alt={deal.title} fill className="object-cover" />
+          <RemoteImage src={resolveImageUrl(deal.image, { w: IMAGE_WIDTH.detail })} alt={deal.title} fill className="object-cover" />
         </div>
         <div className="p-6">
           {deal.badge && (

@@ -8,6 +8,7 @@ import { formatPKR } from '@/constants/currency';
 import { Radius, Spacing } from '@/constants/Spacing';
 import { shadowSm } from '@/constants/shadows';
 import FoodImage from '@/components/FoodImage';
+import { IMAGE_WIDTH } from '@/utils/resolveFoodImage';
 import type { Deal } from '@/types';
 
 type Props = {
@@ -34,7 +35,7 @@ export default function DealCard({ deal, variant = 'grid' }: Props) {
       onPress={() => router.push(`/deal/${deal.id}`)}
     >
       <View style={[styles.imageArea, { backgroundColor: colors.borderLight }]}>
-        <FoodImage image={deal.image} style={styles.photo} emojiStyle={styles.emoji} resizeMode="cover" />
+        <FoodImage image={deal.image} style={styles.photo} emojiStyle={styles.emoji} resizeMode="cover" width={IMAGE_WIDTH.deal} />
         {outOfStock ? (
           <View style={[styles.stockBadge, { backgroundColor: colors.danger }]}>
             <Text style={styles.stockBadgeText}>Out of stock</Text>

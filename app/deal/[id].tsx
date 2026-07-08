@@ -14,6 +14,7 @@ import { useDeals } from '@/contexts/DealsContext';
 import { API_BASE_URL } from '@/constants/api';
 import type { Deal } from '@/types';
 import FoodImage from '@/components/FoodImage';
+import { IMAGE_WIDTH } from '@/utils/resolveFoodImage';
 import { useToast } from '@/contexts/ToastContext';
 
 export default function DealDetailScreen() {
@@ -108,7 +109,7 @@ export default function DealDetailScreen() {
     <View style={[styles.container, { backgroundColor: colors.page }]}>
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}>
         <View style={[styles.hero, { backgroundColor: colors.borderLight }]}>
-          <FoodImage image={deal.image} style={styles.heroPhoto} emojiStyle={styles.heroEmoji} resizeMode="cover" />
+          <FoodImage image={deal.image} style={styles.heroPhoto} emojiStyle={styles.heroEmoji} resizeMode="cover" width={IMAGE_WIDTH.detail} priority="high" />
           {deal.badge ? (
             <View style={[styles.badge, { backgroundColor: colors.cta }]}>
               <Text style={styles.badgeText}>{deal.badge}</Text>

@@ -52,8 +52,10 @@ export default function MenuPageClient() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <h1 className="text-3xl font-extrabold">Menu</h1>
-      <p className="mt-1 text-muted">Browse our full Al-Quds menu</p>
+      <div className="hero-panel mb-8">
+        <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">Menu</h1>
+        <p className="mt-2 text-muted">Browse our full Al-Quds menu — burgers, fried chicken, pasta & more</p>
+      </div>
 
       <div className="mt-6 flex flex-wrap gap-2">
         <button

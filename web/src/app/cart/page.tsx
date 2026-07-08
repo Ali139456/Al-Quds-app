@@ -1,10 +1,10 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
+import { RemoteImage } from '@/components/RemoteImage';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/providers/CartProvider';
-import { formatPKR, resolveImageUrl } from '@/lib/utils';
+import { formatPKR, IMAGE_WIDTH, resolveImageUrl } from '@/lib/utils';
 
 export default function CartPage() {
   const { items, updateQty, removeItem, totalItems, totalPrice } = useCart();
@@ -29,7 +29,7 @@ export default function CartPage() {
         {items.map((line) => (
           <div key={line.lineKey} className="card flex gap-4 p-4">
             <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-stone-100">
-              <Image src={resolveImageUrl(line.food.image)} alt={line.food.name} fill className="object-cover" />
+              <RemoteImage src={resolveImageUrl(line.food.image, { w: IMAGE_WIDTH.thumb })} alt={line.food.name} fill className="object-cover" />
             </div>
             <div className="flex flex-1 flex-col">
               <h3 className="font-bold">{line.food.name}</h3>

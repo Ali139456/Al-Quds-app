@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { BannerSlider } from '@/components/BannerSlider';
 import { FoodCard } from '@/components/FoodCard';
 import { DealCard } from '@/components/DealCard';
+import { SectionHeading } from '@/components/SectionHeading';
 import { apiFetch } from '@/lib/api';
 import type { FoodItem, Deal, Category } from '@/lib/types';
 
@@ -22,24 +23,36 @@ export default async function HomePage() {
   const hotItems = menu.slice(0, 8);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-10 px-4 py-8">
-      <section>
-        <p className="text-sm text-muted">{getGreeting()} 👋</p>
-        <h1 className="mt-1 text-3xl font-extrabold tracking-tight">Hungry? Order from Al-Quds</h1>
-        <p className="mt-2 text-muted">Rawalpindi delivery · No app download needed</p>
+    <div className="mx-auto max-w-6xl space-y-12 px-4 py-8">
+      <section className="hero-panel animate-fade-in">
+        <p className="text-xs font-semibold text-accent-dark md:text-sm">{getGreeting()} 👋</p>
+        <h1 className="mt-1 text-2xl font-extrabold tracking-tight md:text-3xl">
+          Hungry? Order from{' '}
+          <span className="bg-gradient-to-r from-accent-dark to-accent bg-clip-text text-transparent">
+            Al-Quds
+          </span>
+        </h1>
+        <p className="mt-1.5 max-w-lg text-sm text-muted">
+          Rawalpindi delivery · Burgers, fried chicken & more
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link href="/menu" className="btn-primary !px-4 !py-2 text-sm">
+            Order now
+          </Link>
+          <Link href="/menu?tab=deals" className="btn-secondary !px-4 !py-2 text-sm">
+            View deals
+          </Link>
+        </div>
       </section>
 
-      <BannerSlider />
+      <section className="animate-fade-in">
+        <BannerSlider />
+      </section>
 
       {deals.length > 0 && (
         <section>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-extrabold">🔥 Deals & Combos</h2>
-            <Link href="/menu?tab=deals" className="text-sm font-bold text-accent-dark hover:underline">
-              View all
-            </Link>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <SectionHeading title="🔥 Deals & Combos" href="/menu?tab=deals" />
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {deals.slice(0, 3).map((d) => (
               <DealCard key={d.id} deal={d} />
             ))}
@@ -49,15 +62,16 @@ export default async function HomePage() {
 
       {categories.length > 0 && (
         <section>
-          <h2 className="mb-4 text-xl font-extrabold">Categories</h2>
-          <div className="flex flex-wrap gap-2">
+          <SectionHeading title="Browse by category" />
+          <div className="flex flex-wrap gap-2.5">
             {categories.map((c) => (
               <Link
                 key={c.id}
                 href={`/menu?category=${encodeURIComponent(c.id)}`}
-                className="rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold hover:border-accent hover:bg-accent/10"
+                className="group rounded-2xl border border-border bg-card px-5 py-3 text-sm font-semibold shadow-sm transition hover:-translate-y-0.5 hover:border-accent/40 hover:bg-accent/10 hover:shadow-md"
               >
-                {c.icon} {c.label || c.name}
+                <span className="mr-1.5">{c.icon}</span>
+                {c.label || c.name}
               </Link>
             ))}
           </div>
@@ -65,12 +79,7 @@ export default async function HomePage() {
       )}
 
       <section>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-extrabold">Popular picks</h2>
-          <Link href="/menu" className="text-sm font-bold text-accent-dark hover:underline">
-            Full menu
-          </Link>
-        </div>
+        <SectionHeading title="Popular picks" href="/menu" linkLabel="Full menu" />
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
           {hotItems.map((item) => (
             <FoodCard key={item.id} item={item} />

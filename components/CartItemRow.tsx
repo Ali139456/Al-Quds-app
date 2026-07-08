@@ -7,6 +7,7 @@ import Colors from '@/constants/Colors';
 import { Radius, Spacing } from '@/constants/Spacing';
 import AddonChips from '@/components/AddonChips';
 import FoodImage from '@/components/FoodImage';
+import { IMAGE_WIDTH } from '@/utils/resolveFoodImage';
 
 type CartItemRowProps = {
   item: CartItem;
@@ -30,7 +31,7 @@ export default function CartItemRow({
       style={[styles.cartItem, { backgroundColor: colors.card, borderColor: colors.border }]}
     >
       <View style={[styles.itemEmojiWrap, { backgroundColor: colors.accentMuted }]}>
-        <FoodImage image={food.image} style={styles.itemPhoto} emojiStyle={styles.itemEmoji} resizeMode="cover" />
+        <FoodImage image={food.image} style={styles.itemPhoto} emojiStyle={styles.itemEmoji} resizeMode="cover" width={IMAGE_WIDTH.thumb} />
       </View>
       <View style={styles.itemInfo}>
         <Text style={[styles.itemName, { color: colors.text }]}>{food.name}</Text>

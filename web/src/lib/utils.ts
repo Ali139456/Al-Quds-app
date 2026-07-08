@@ -2,11 +2,32 @@ export function formatPKR(amount: number): string {
   return `Rs. ${Math.round(amount).toLocaleString('en-PK')}`;
 }
 
-export function resolveImageUrl(image?: string | null): string {
+export const IMAGE_WIDTH = {
+  thumb: 200,
+  card: 420,
+  deal: 520,
+  banner: 960,
+  detail: 900,
+} as const;
+
+type ImageUrlOpts = { w?: number; q?: number };
+
+export function resolveImageUrl(image?: string | null, opts?: ImageUrlOpts): string {
   if (!image) return '/al-quds-icon.png';
-  if (image.startsWith('http')) return image;
+  if (image.startsWith('http')) {
+    if (opts?.w && image.includes('/uploads/')) {
+      const sep = image.includes('?') ? '&' : '?';
+      return `${image}${sep}w=${opts.w}&q=${opts.q ?? 75}`;
+    }
+    return image;
+  }
   const base = (process.env.NEXT_PUBLIC_API_URL || 'https://al-quds-app-production.up.railway.app').replace(/\/$/, '');
-  return `${base}${image.startsWith('/') ? image : `/${image}`}`;
+  const path = image.startsWith('/') ? image : `/${image}`;
+  const url = `${base}${path}`;
+  if (opts?.w && path.includes('/uploads/')) {
+    return `${url}?w=${opts.w}&q=${opts.q ?? 75}`;
+  }
+  return url;
 }
 
 export const RAWALPINDI_BOUNDS = {

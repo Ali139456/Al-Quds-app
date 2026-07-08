@@ -1,7 +1,7 @@
 import { Image, ImageStyle } from 'expo-image';
 import { useState } from 'react';
 import { StyleProp, Text, TextStyle } from 'react-native';
-import { resolveFoodImageUri } from '@/utils/resolveFoodImage';
+import { resolveFoodImageUri, IMAGE_WIDTH } from '@/utils/resolveFoodImage';
 
 type Props = {
   image?: string;
@@ -10,6 +10,8 @@ type Props = {
   resizeMode?: 'cover' | 'contain' | 'stretch' | 'center';
   fallbackEmoji?: string;
   priority?: 'low' | 'normal' | 'high';
+  /** Request width from API image resize (smaller = faster). */
+  width?: number;
 };
 
 function toContentFit(resizeMode: Props['resizeMode']) {
@@ -25,9 +27,10 @@ export default function FoodImage({
   resizeMode = 'cover',
   fallbackEmoji = '🍔',
   priority = 'normal',
+  width = IMAGE_WIDTH.card,
 }: Props) {
   const [loadFailed, setLoadFailed] = useState(false);
-  const uri = resolveFoodImageUri(image);
+  const uri = resolveFoodImageUri(image, width);
   if (uri && !loadFailed) {
     return (
       <Image

@@ -4,12 +4,12 @@
     "slug": "al-quds-food",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/al-quds-icon.png",
+    "icon": "./assets/images/al-quds-app-icon.png",
     "scheme": "foodorderapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/al-quds-mark.png",
+      "image": "./assets/images/al-quds-logo-light.png",
       "resizeMode": "contain",
       "backgroundColor": "#F5F3F0"
     },
@@ -24,7 +24,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/al-quds-icon.png",
+        "foregroundImage": "./assets/images/al-quds-app-icon.png",
         "backgroundColor": "#F5F3F0"
       },
       "permissions": [
@@ -48,7 +48,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/al-quds-icon.png",
+          "icon": "./assets/images/al-quds-app-icon.png",
           "color": "#D1AB66",
           "defaultChannel": "orders",
           "sounds": [],

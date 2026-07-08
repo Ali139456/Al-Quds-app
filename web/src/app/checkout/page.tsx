@@ -3,19 +3,19 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { DeliveryLocationPicker } from '@/components/DeliveryLocationPicker';
 import { useCart } from '@/providers/CartProvider';
 import { useAuth } from '@/providers/AuthProvider';
 import { useSettings } from '@/providers/SettingsProvider';
 import { apiFetch } from '@/lib/api';
 import type { CouponResult } from '@/lib/types';
+import type { DeliveryPin } from '@/lib/geo';
 import {
   formatPKR,
   formatPakPhoneDisplay,
-  getAreaByName,
   isInRawalpindi,
   normalizePakPhone,
   PAYMENT_ACCOUNT,
-  RAWALPINDI_AREAS,
 } from '@/lib/utils';
 
 export default function CheckoutPage() {
@@ -26,7 +26,7 @@ export default function CheckoutPage() {
 
   const [name, setName] = useState(user?.name || '');
   const [phone, setPhone] = useState(user?.phone || '');
-  const [area, setArea] = useState<string>(RAWALPINDI_AREAS[0].name);
+  const [deliveryPin, setDeliveryPin] = useState<DeliveryPin | null>(null);
   const [houseStreet, setHouseStreet] = useState('');
   const [instructions, setInstructions] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'digital'>('cod');
@@ -48,10 +48,6 @@ export default function CheckoutPage() {
       </div>
     );
   }
-
-  const selectedArea = getAreaByName(area) || RAWALPINDI_AREAS[0];
-  const lat = selectedArea.latitude;
-  const lng = selectedArea.longitude;
 
   const applyCoupon = async () => {
     if (!couponInput.trim()) return;
@@ -81,10 +77,17 @@ export default function CheckoutPage() {
     const normalizedPhone = normalizePakPhone(phone);
     if (!name.trim()) return setError('Enter your name');
     if (!normalizedPhone) return setError('Enter a valid Pakistani mobile (03XX XXXXXXX)');
+    if (!deliveryPin) return setError('Set your delivery location on the map');
     if (!houseStreet.trim()) return setError('Enter house / street number');
-    if (!isInRawalpindi(lat, lng)) return setError('Sorry, we only deliver within Rawalpindi.');
+    if (!isInRawalpindi(deliveryPin.lat, deliveryPin.lng)) {
+      return setError('Sorry, we only deliver within Rawalpindi.');
+    }
 
-    const addressLine = [area, houseStreet.trim(), instructions.trim()].filter(Boolean).join(', ');
+    const lat = deliveryPin.lat;
+    const lng = deliveryPin.lng;
+    const addressLine = [deliveryPin.addressLine, houseStreet.trim(), instructions.trim()]
+      .filter(Boolean)
+      .join(', ');
     const orderId = `order_${Date.now()}`;
     const userId = user?.id || 'guest';
 
@@ -135,6 +138,8 @@ export default function CheckoutPage() {
         total: grandTotal,
         addressLabel: 'Web order',
         addressLine,
+        latitude: lat,
+        longitude: lng,
         status: 'placed',
         createdAt: new Date().toISOString(),
       });
@@ -155,24 +160,34 @@ export default function CheckoutPage() {
       <p className="mt-1 text-muted">Delivering in Rawalpindi only</p>
 
       <div className="mt-6 space-y-4">
-        <div className="card p-4 space-y-3">
+        <div className="card space-y-3 p-4">
           <h2 className="font-bold">Your details</h2>
           <input className="input-field" placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} />
           <input className="input-field" placeholder="Mobile 03XX XXXXXXX" value={phone} onChange={(e) => setPhone(e.target.value)} />
         </div>
 
-        <div className="card p-4 space-y-3">
-          <h2 className="font-bold">Delivery address</h2>
-          <select className="input-field" value={area} onChange={(e) => setArea(e.target.value)}>
-            {RAWALPINDI_AREAS.map((a) => (
-              <option key={a.id} value={a.name}>{a.name}</option>
-            ))}
-          </select>
-          <input className="input-field" placeholder="House / street number" value={houseStreet} onChange={(e) => setHouseStreet(e.target.value)} />
-          <input className="input-field" placeholder="Note for rider (optional)" value={instructions} onChange={(e) => setInstructions(e.target.value)} />
+        <div className="card space-y-3 p-4">
+          <h2 className="font-bold">Delivery location</h2>
+          <DeliveryLocationPicker
+            value={deliveryPin}
+            onChange={setDeliveryPin}
+            onError={setError}
+          />
+          <input
+            className="input-field"
+            placeholder="House / street / flat number"
+            value={houseStreet}
+            onChange={(e) => setHouseStreet(e.target.value)}
+          />
+          <input
+            className="input-field"
+            placeholder="Note for rider (optional)"
+            value={instructions}
+            onChange={(e) => setInstructions(e.target.value)}
+          />
         </div>
 
-        <div className="card p-4 space-y-3">
+        <div className="card space-y-3 p-4">
           <h2 className="font-bold">Payment</h2>
           <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-border p-3">
             <input type="radio" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} />
@@ -184,7 +199,7 @@ export default function CheckoutPage() {
           </label>
         </div>
 
-        <div className="card p-4 space-y-3">
+        <div className="card space-y-3 p-4">
           <h2 className="font-bold">Coupon</h2>
           <div className="flex gap-2">
             <input className="input-field" placeholder="Coupon code" value={couponInput} onChange={(e) => setCouponInput(e.target.value)} />
@@ -202,7 +217,7 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {error && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</p>}
+        {error && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
 
         <button type="button" className="btn-primary w-full" disabled={placing} onClick={placeOrder}>
           {placing ? 'Placing order...' : `Place order · ${formatPKR(grandTotal)}`}

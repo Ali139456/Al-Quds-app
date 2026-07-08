@@ -137,10 +137,29 @@ const dealStorage = multer.diskStorage({
 });
 const uploadDeal = multer({ storage: dealStorage, limits: { fileSize: 5 * 1024 * 1024 } });
 
+const { createImageResizeMiddleware, optimizeImageFile } = require('./image-service');
+const imgCacheDir = path.join(dataDir, 'img-cache');
+
+function finishImageUpload(res, urlPath) {
+  const filePath = path.join(__dirname, urlPath.replace(/^\//, '').split('/').join(path.sep));
+  optimizeImageFile(filePath)
+    .catch(() => {})
+    .finally(() => res.json({ url: urlPath }));
+}
+
 const app = express();
 app.use(cors({ origin: true }));
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', createImageResizeMiddleware(path.join(__dirname, 'uploads'), imgCacheDir));
+app.use(
+  '/uploads',
+  express.static(path.join(__dirname, 'uploads'), {
+    maxAge: '7d',
+    setHeaders(res) {
+      res.setHeader('Cache-Control', 'public, max-age=604800');
+    },
+  })
+);
 
 app.get('/health', (_req, res) => {
   res.json({ ok: true, service: 'al-quds-api', ready: serverReady });
@@ -582,8 +601,7 @@ app.post('/api/admin/banners/upload', (req, res, next) => {
       return res.status(400).json({ error: err.message || 'Upload failed' });
     }
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-    const url = '/uploads/banners/' + req.file.filename;
-    res.json({ url });
+    finishImageUpload(res, '/uploads/banners/' + req.file.filename);
   });
 });
 
@@ -661,8 +679,7 @@ app.post('/api/admin/categories/upload', (req, res, next) => {
       return res.status(400).json({ error: err.message || 'Upload failed' });
     }
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-    const url = '/uploads/menu/categories/' + req.file.filename;
-    res.json({ url });
+    finishImageUpload(res, '/uploads/menu/categories/' + req.file.filename);
   });
 });
 
@@ -673,8 +690,7 @@ app.post('/api/admin/menu/upload', (req, res, next) => {
       return res.status(400).json({ error: err.message || 'Upload failed' });
     }
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-    const url = '/uploads/menu/' + req.file.filename;
-    res.json({ url });
+    finishImageUpload(res, '/uploads/menu/' + req.file.filename);
   });
 });
 
@@ -685,8 +701,7 @@ app.post('/api/admin/addons/upload', (req, res, next) => {
       return res.status(400).json({ error: err.message || 'Upload failed' });
     }
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-    const url = '/uploads/menu/addons/' + req.file.filename;
-    res.json({ url });
+    finishImageUpload(res, '/uploads/menu/addons/' + req.file.filename);
   });
 });
 
@@ -1492,7 +1507,7 @@ app.post('/api/admin/deals/upload', (req, res, next) => {
       return res.status(400).json({ error: err.message || 'Upload failed' });
     }
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-    res.json({ url: '/uploads/deals/' + req.file.filename });
+    finishImageUpload(res, '/uploads/deals/' + req.file.filename);
   });
 });
 

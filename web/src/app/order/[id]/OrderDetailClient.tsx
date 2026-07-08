@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
+import { buildOsmEmbedUrl } from '@/lib/geo';
 import { formatPKR } from '@/lib/utils';
 
 const STEPS = ['placed', 'confirmed', 'preparing', 'out_for_delivery', 'delivered'] as const;
@@ -29,6 +30,9 @@ export default function OrderDetailClient() {
 
   const status = String(order.status || 'placed');
   const stepIndex = STEPS.indexOf(status as (typeof STEPS)[number]);
+  const lat = Number(order.latitude);
+  const lng = Number(order.longitude);
+  const hasMap = Number.isFinite(lat) && Number.isFinite(lng);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
@@ -41,6 +45,19 @@ export default function OrderDetailClient() {
 
       <h1 className="text-2xl font-extrabold">Order #{String(order.id).replace('order_', '')}</h1>
       <p className="mt-1 text-muted">{String(order.address_line || '')}</p>
+
+      {hasMap && (
+        <div className="card mt-4 overflow-hidden p-0">
+          <iframe
+            title="Delivery location"
+            src={buildOsmEmbedUrl(lat, lng)}
+            className="h-48 w-full border-0 md:h-56"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+        </div>
+      )}
+
       <p className="mt-4 text-2xl font-extrabold text-accent-dark">{formatPKR(Number(order.total) || 0)}</p>
 
       <div className="card mt-6 p-4">

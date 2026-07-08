@@ -13,6 +13,7 @@ import { useMenu } from '@/contexts/MenuContext';
 import { DEFAULT_ADDONS, groupAddons, isFriesAddon } from '@/constants/addons';
 import type { Variety, Addon } from '@/types';
 import FoodImage from '@/components/FoodImage';
+import { IMAGE_WIDTH } from '@/utils/resolveFoodImage';
 
 function Radio({ selected, colors }: { selected: boolean; colors: (typeof Colors)['light'] }) {
   return (
@@ -116,7 +117,7 @@ export default function FoodDetailScreen() {
       >
         {/* Hero */}
         <View style={[styles.hero, { backgroundColor: colors.borderLight }]}>
-          <FoodImage image={item.image} style={styles.heroImg} emojiStyle={styles.heroEmoji} resizeMode="cover" />
+          <FoodImage image={item.image} style={styles.heroImg} emojiStyle={styles.heroEmoji} resizeMode="cover" width={IMAGE_WIDTH.detail} priority="high" />
         </View>
 
         <View style={styles.heroInfo}>
